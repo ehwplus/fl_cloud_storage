@@ -13,21 +13,30 @@ and the Flutter guide for
 
 fl_cloud_storage
 
-## Known limitations
+## Features a cloud service can provide
 
-* Right now this is only tested inside local network.
-* Note that emulator seems not to be able to connect with FRITZ!Box.
-* This is just a very first draft of the plugin. Feel free to make pull requests. Best way to start
-  is unfortunately not the AVM documentation. Open http://fritz.box inside your browser and analyze
-  network calls via developer tools/network analysis.
+1. Authenticate (login)
+2. Authorize
+3. Upload files to a cloud
+4. Download files from a cloud
+5. Delete files from cloud
+6. Supported operating systems: iOS, Android, Web, MacOS, Windows, Linux (or subset)
 
-## Features
+## Supported clouds
 
-* Authenticate (login)
-* Authorize
-* Upload files to a cloud
-* Download files from a cloud
-* Delete files from cloud
+|                 | Google Drive | iCloud |
+|-----------------|--------------|--------|
+| Authenticate    |              |        |
+| Authorize       |              |        |
+| Upload files    |              |        |
+| Download files  |              |        |
+| Delete files    |              |        |
+| iOS support     |              |        |
+| Android support |              |        |
+| Web support     |              |        |
+| MacOS support   |              |        |
+| Windows support |              |        |
+| Linux support   |              |        |
 
 ## Usage
 
