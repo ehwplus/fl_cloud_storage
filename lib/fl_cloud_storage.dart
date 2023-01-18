@@ -1,3 +1,3 @@
 library fl_cloud_storage;
 
-export 'fl_cloud_storage/cloud_service.dart';
+export 'fl_cloud_storage/cloud_storage_service.dart';
