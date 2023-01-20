@@ -2,27 +2,27 @@ import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_service.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/platform_support_enum.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_folder.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
+import 'package:google_sign_in/google_sign_in.dart'
+    show GoogleSignIn, GoogleSignInAccount;
+import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
 const googleDriveSingleUserScope = [
-  drive.DriveApi.driveAppdataScope,
-  drive.DriveApi.driveFileScope
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope
 ];
 
 /// Scope for sharing json with other Google users
 const googleDriveFullScope = [
-  drive.DriveApi.driveAppdataScope,
-  drive.DriveApi.driveFileScope,
-  drive.DriveApi.driveScope
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope,
+  v3.DriveApi.driveScope
 ];
 
 class _GoogleAuthClient extends http.BaseClient {
   _GoogleAuthClient(this._headers);
 
   final Map<String, String> _headers;
-
   final http.Client _client = http.Client();
 
   @override
@@ -37,144 +37,205 @@ class GoogleDriveService
   /// Use `await GoogleDriveService.initialize()`.
   GoogleDriveService._();
 
-  late drive.DriveApi _driveApi;
+  /// Whether to do the google login silently or interactively.
+  /// A previously authenticated google user can be logged in silently.
+  /// FIXME this variable is not configurable as of now 1/20/23
+  final bool interactiveLogin = false;
+
+  /// The [v3.DriveApi] which is used to communicate with the google drive
+  /// service.
+  late v3.DriveApi _driveApi;
+
+  late _GoogleAuthClient _authenticateClient;
 
   static String get serviceDisplayName => 'Google Drive';
 
   /// Google drive service is supported on all platforms.
-  static List<PlatformSupportEnum> get supportedPlatforms =>
-      PlatformSupportEnum.values;
+  static List<PlatformSupportEnum> get supportedPlatforms => [
+        PlatformSupportEnum.ANDROID,
+        PlatformSupportEnum.IOS,
+        PlatformSupportEnum.WEB,
+      ];
 
   static Future<GoogleDriveService> initialize() async {
     final instance = GoogleDriveService._();
-
-    // TODO move the bottom stuff into authenticate?
-    const onlySilent = false;
-    final googleSignIn = GoogleSignIn(
-      scopes: googleDriveSingleUserScope,
-    );
-    final isSignedIn = await googleSignIn.isSignedIn();
-    GoogleSignInAccount? googleUser = googleSignIn.currentUser;
-
-    if (instance._driveApi == null) {
-      if (!isSignedIn || googleUser == null) {
-        final Future<GoogleSignInAccount?> Function({bool onlySilent})
-            getGoogleUser = ({bool onlySilent = false}) async {
-          try {
-            return (await googleSignIn.signInSilently(suppressErrors: false)) ??
-                (onlySilent ? null : await googleSignIn.signIn());
-          } catch (e) {
-            if (!onlySilent) {
-              return googleSignIn.signIn();
-            }
-          }
-          return null;
-        };
-        googleUser = await getGoogleUser(onlySilent: onlySilent);
-      }
-
-      if (googleUser != null) {
-        final Map<String, String> authHeaders = await googleUser.authHeaders;
-        final authenticateClient = _GoogleAuthClient(authHeaders);
-        instance._driveApi = drive.DriveApi(authenticateClient);
-      } else {
-        // THROW!!!
-      }
-    }
+    await instance.initializeApi();
     return instance;
+  }
+
+  Future<void> initializeApi() async {
+    final isAuthenticated = await authenticate();
+    if (isAuthenticated) {
+      _driveApi = v3.DriveApi(_authenticateClient);
+    }
+    if (_driveApi == null) {
+      throw Exception('Failed to initialize Google drive API!');
+    }
   }
 
   // AUTH
 
+  /// This method does a google login with scopes for google drive.
+  ///
+  /// The authentication headers of the google user are used to initialize the
+  /// Google drive API later on.
   @override
-  Future<bool> authenticate() {
-    // TODO: implement authenticate
-    throw UnimplementedError();
+  Future<bool> authenticate() async {
+    final googleSignIn = GoogleSignIn(
+      scopes: googleDriveSingleUserScope,
+    );
+    final _isSignedIn = await googleSignIn.isSignedIn();
+    GoogleSignInAccount? googleUser = googleSignIn.currentUser;
+    if (!_isSignedIn) {
+      googleUser = await _getGoogleUser(googleSignIn);
+    }
+
+    if (googleUser != null) {
+      final Map<String, String> authHeaders = await googleUser.authHeaders;
+      _authenticateClient = _GoogleAuthClient(authHeaders);
+    } else {
+      throw Exception(
+        'Failed to obtain google user which shall be authenticated!',
+      );
+    }
+    return googleSignIn.isSignedIn();
+  }
+
+  Future<GoogleSignInAccount?> _getGoogleUser(GoogleSignIn googleSignIn) async {
+    try {
+      return (await googleSignIn.signInSilently(suppressErrors: false)) ??
+          (interactiveLogin ? await googleSignIn.signIn() : null);
+    } catch (e) {
+      if (!interactiveLogin) {
+        return googleSignIn.signIn();
+      }
+    }
+    return null;
   }
 
   @override
   Future<bool> authorize() {
-    // TODO: implement authorize
     throw UnimplementedError();
   }
 
   // FILES
 
   @override
-  Future<bool> deleteFile(GoogleDriveFile file) {
-    // TODO: implement deleteFile
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<GoogleDriveFile> downloadFile(GoogleDriveFile file) async {
-    // Completes with a commons.ApiRequestError if the API endpoint returned an error
+  Future<bool> deleteFile({required GoogleDriveFile file}) {
     if (file.file.id == null) {
       // log.e this
       throw Exception(
-        'Must provide a file id of the file which shall be downloaded',
+        'Must provide a file id of the file which shall be downloaded!',
       );
     }
-    final drive.Media media = await _driveApi.files.get(
+    // If the used http.Client completes with an error when making a REST call,
+    // this method will complete with the same error.
+    try {
+      _driveApi.files.delete(file.file.id!);
+      return Future.value(true);
+    } catch (ex) {
+      return Future.value(false);
+    }
+  }
+
+  @override
+  Future<GoogleDriveFile> downloadFile({required GoogleDriveFile file}) async {
+    // Completes with a commons.ApiRequestError if the API endpoint returned an error
+    if (file.file.id == null) {
+      throw Exception(
+        'Must provide a file id of the file which shall be deleted!',
+      );
+    }
+    final v3.Media media = await _driveApi.files.get(
       file.file.id!,
-      downloadOptions: drive.DownloadOptions.fullMedia,
-    ) as drive.Media;
+      downloadOptions: v3.DownloadOptions.fullMedia,
+    ) as v3.Media;
     return Future.value(file.copyWith(media: media));
   }
 
   @override
-  Future<GoogleDriveFile> uploadFile(GoogleDriveFile file) async {
+  Future<GoogleDriveFile> uploadFile({
+    required GoogleDriveFile file,
+    GoogleDriveFolder? parent,
+    bool overwrite = false,
+  }) async {
+    if (parent != null && parent.folder.id != null) {
+      if (!(file.file.parents?.contains(parent.folder.id) ?? true)) {
+        file.file.parents = [...?file.file.parents, parent.folder.id!];
+      }
+    }
     return file.copyWith(
       file: await _driveApi.files.create(file.file, uploadMedia: file.media),
     );
   }
 
   @override
-  Future<List<GoogleDriveFile>> listAllFiles(GoogleDriveFolder folder) async {
+  Future<List<GoogleDriveFile>> listAllFiles(
+      {GoogleDriveFolder? folder}) async {
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
-    final drive.FileList res = await _driveApi.files.list(
-      $fields: 'files/*',
-      q: "'${folder.folder.id}' in parents",
-    );
+    final v3.FileList res;
+    if (folder == null) {
+      res = await _driveApi.files.list(
+        $fields: 'files/*',
+      );
+    } else {
+      res = await _driveApi.files.list(
+        $fields: 'files/*',
+        q: "'${folder.folder.id}' in parents",
+      );
+    }
     if (res.nextPageToken != null) {
-      // complete the files list
+      // TODO complete the files list
     }
     if (res.files == null) {
-      // wtf/e log here
-      throw Exception('Unable to fetch files!');
+      throw Exception('Unable to list all files!');
     }
     return res.files!
-        .map((e) => GoogleDriveFile(file: e, media: null))
+        .map((file) => GoogleDriveFile(file: file, media: null))
         .toList();
   }
 
   // FOLDERS
 
   @override
-  Future<bool> uploadFolder(GoogleDriveFolder folder) {
-    //   var _drive = v3.DriveApi(http_client);
-    //   var _createFolder = await _drive.files.create(
-    //     v3.File()
-    //       ..name = 'FileName'
-    //       ..parents = [
-    //         '1f4tjhpBJwF5t6FpYvufTljk8Gapbwajc'
-    //       ] // Optional if you want to create subfolder
-    //       ..mimeType =
-    //           'application/vnd.google-apps.folder', // this defines its folder
-    //   );
-    // });
-    throw UnimplementedError();
+  Future<GoogleDriveFolder> uploadFolder({
+    required String name,
+    GoogleDriveFolder? parent,
+  }) async {
+    final folder = v3.File()
+      ..name = name
+      ..mimeType = 'application/vnd.google-apps.folder';
+    if (parent != null) {
+      folder.parents = [];
+    }
+    return GoogleDriveFolder(folder: await _driveApi.files.create(folder));
   }
 
   @override
-  Future<bool> deleteFolder(GoogleDriveFolder folder) {
-    // TODO: implement deleteFolder
-    throw UnimplementedError();
+  Future<bool> deleteFolder({
+    required GoogleDriveFolder folder,
+  }) {
+    if (folder.folder.id == null) {
+      // log.e this
+      throw Exception(
+        'Must provide a folder id of the folder which shall be deleted!',
+      );
+    }
+    // If the used http.Client completes with an error when making a REST call,
+    // this method will complete with the same error.
+    try {
+      _driveApi.files.delete(folder.folder.id!);
+      return Future.value(true);
+    } catch (ex) {
+      return Future.value(false);
+    }
   }
 
   @override
-  Future<bool> downloadFolder(GoogleDriveFolder folder) {
-    // TODO: implement downloadFolder
-    throw UnimplementedError();
+  Future<List<GoogleDriveFile>> downloadFolder({
+    required GoogleDriveFolder folder,
+  }) async {
+    final files = await listAllFiles(folder: folder);
+    return Future.wait(files.map((file) => downloadFile(file: file)).toList());
   }
 }
