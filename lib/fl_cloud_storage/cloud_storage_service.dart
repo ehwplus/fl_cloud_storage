@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_service.dart';
@@ -53,10 +54,10 @@ class CloudStorageService {
   /// );
   /// ```
   /// to get a list of display names for the available services.
-  static List<Type> get availableServices => [
-        GoogleDriveService,
+  static Map<CloudStorageServiceEnum, Type> get availableServices => {
+        CloudStorageServiceEnum.GOOGLE_DRIVE: GoogleDriveService,
         // add your cloud provider class here
-      ];
+      };
 
   /// Symbol of the currently active delegate for unambiguous identification.
   CloudStorageServiceEnum delegateKey;

@@ -4,7 +4,7 @@ import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/platform_support_enum.dart';
 
 abstract class ICloudService<FILE extends CloudFile<dynamic>,
-    FOLDER extends CloudFolder<dynamic>> {
+    FOLDER extends CloudFolder<dynamic>> extends Type {
   static String get serviceDisplayName => throw UnimplementedError();
 
   static CloudStorageServiceEnum get serviceKey => throw UnimplementedError();
