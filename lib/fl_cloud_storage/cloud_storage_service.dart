@@ -1,22 +1,28 @@
 import 'dart:async';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_file.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_service.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/logger.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_service.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
+/// The available delegates for the [CloudStorageService].
+enum StorageType {
+  GOOGLE_DRIVE(name: 'Google Drive', supportedPlatforms: {
+    PlatformSupportEnum.ANDROID,
+    PlatformSupportEnum.IOS,
+    PlatformSupportEnum.WEB,
+  });
+
+  // add your cloud provider enum here
+
+  const StorageType({required this.name, required this.supportedPlatforms});
+  final String name;
+  final Set<PlatformSupportEnum> supportedPlatforms;
+}
+
 /// Root logger.
 final Logger log = Logger(printer: MyPrinter('FL_CLOUD_STORAGE'));
-
-/// The available delegates for the [CloudStorageService].
-enum CloudStorageServiceEnum {
-  GOOGLE_DRIVE,
-  // add your cloud provider key here
-}
 
 /// This class is the entrypoint for the fl_cloud_storage package. It is a
 /// factory that - given the [delegateKey] generates the according delegate
@@ -28,39 +34,22 @@ class CloudStorageService {
 
   /// Maybe-async initialization of the cloud storage service.
   static FutureOr<CloudStorageService> initialize(
-    CloudStorageServiceEnum delegate,
+    StorageType delegate,
   ) async {
     final instance = CloudStorageService._(delegate);
     switch (delegate) {
-      case CloudStorageServiceEnum.GOOGLE_DRIVE:
+      case StorageType.GOOGLE_DRIVE:
         instance._delegate = await GoogleDriveService.initialize();
-        instance.delegateDisplayName = GoogleDriveService.serviceDisplayName;
         break;
 
       // add your cloud providers here
-
-      default:
-        throw Exception('Incompatible delegate!');
     }
     log.d('Initialized and ready.');
     return instance;
   }
 
-  /// A list of available cloud storage services.
-  /// Can be used as follows:
-  /// ```
-  /// CloudStorageService.availableServices.map(
-  ///     (service) => service.serviceDisplayName,
-  /// );
-  /// ```
-  /// to get a list of display names for the available services.
-  static Map<CloudStorageServiceEnum, Type> get availableServices => {
-        CloudStorageServiceEnum.GOOGLE_DRIVE: GoogleDriveService,
-        // add your cloud provider class here
-      };
-
   /// Symbol of the currently active delegate for unambiguous identification.
-  CloudStorageServiceEnum delegateKey;
+  StorageType delegateKey;
 
   /// Display name of the currently active delegate.
   late String delegateDisplayName;
@@ -142,7 +131,7 @@ class CloudStorageService {
 
   /// Invokes the [listAllFiles] method of the delegate instance.
   FutureOr<List<CloudFile<dynamic>>> listAllFiles({
-    required CloudFolder<dynamic> folder,
+    CloudFolder<dynamic>? folder,
   }) {
     try {
       return _delegate.listAllFiles(folder: folder);

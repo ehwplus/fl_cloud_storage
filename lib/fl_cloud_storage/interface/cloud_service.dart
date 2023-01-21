@@ -1,17 +1,8 @@
-import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/util/platform_support_enum.dart';
 
 abstract class ICloudService<FILE extends CloudFile<dynamic>,
     FOLDER extends CloudFolder<dynamic>> extends Type {
-  static String get serviceDisplayName => throw UnimplementedError();
-
-  static CloudStorageServiceEnum get serviceKey => throw UnimplementedError();
-
-  static List<PlatformSupportEnum> get supportedPlatforms =>
-      throw UnimplementedError();
-
   /// Used to initialize this service asynchronously.
   static Future<void> initialize() {
     throw UnimplementedError();

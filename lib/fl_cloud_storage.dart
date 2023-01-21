@@ -1,7 +1,7 @@
 library fl_cloud_storage;
 
 export 'fl_cloud_storage/cloud_storage_service.dart'
-    show CloudStorageServiceEnum, CloudStorageService;
+    show StorageType, CloudStorageService;
 export 'fl_cloud_storage/interface/cloud_file.dart' show CloudFile;
 export 'fl_cloud_storage/interface/cloud_folder.dart' show CloudFolder;
 export 'fl_cloud_storage/interface/cloud_service.dart' show ICloudService;

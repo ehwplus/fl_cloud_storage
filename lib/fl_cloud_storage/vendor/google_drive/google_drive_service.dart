@@ -48,14 +48,9 @@ class GoogleDriveService
 
   late _GoogleAuthClient _authenticateClient;
 
-  static String get serviceDisplayName => 'Google Drive';
-
   /// Google drive service is supported on all platforms.
-  static List<PlatformSupportEnum> get supportedPlatforms => [
-        PlatformSupportEnum.ANDROID,
-        PlatformSupportEnum.IOS,
-        PlatformSupportEnum.WEB,
-      ];
+  ///
+  static List<PlatformSupportEnum> get supportedPlatforms => [];
 
   static Future<GoogleDriveService> initialize() async {
     final instance = GoogleDriveService._();
@@ -123,7 +118,6 @@ class GoogleDriveService
   @override
   Future<bool> deleteFile({required GoogleDriveFile file}) {
     if (file.file.id == null) {
-      // log.e this
       throw Exception(
         'Must provide a file id of the file which shall be downloaded!',
       );

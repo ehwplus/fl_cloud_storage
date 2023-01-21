@@ -35,10 +35,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late final CloudStorageService cloudStorageService;
 
-  final Map<CloudStorageServiceEnum, Type> availableServices =
-      CloudStorageService.availableServices;
-
-  CloudStorageServiceEnum? selection = CloudStorageServiceEnum.GOOGLE_DRIVE;
+  StorageType? selection = StorageType.GOOGLE_DRIVE;
 
   @override
   Widget build(BuildContext context) {
@@ -53,17 +50,18 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Text('fl_cloud_storage'),
             ),
             const SizedBox(height: 25),
-            DropdownButton<CloudStorageServiceEnum>(
+            DropdownButton<StorageType>(
               value: selection,
-              items: CloudStorageServiceEnum.values
-                  .map<DropdownMenuItem<CloudStorageServiceEnum>>(
-                      (CloudStorageServiceEnum e) => DropdownMenuItem(
-                            key: Key(e.name),
-                            value: e,
-                            child: Text(availableServices[e].toString()),
-                          ))
+              items: StorageType.values
+                  .map<DropdownMenuItem<StorageType>>(
+                    (StorageType e) => DropdownMenuItem(
+                      key: Key(e.name),
+                      value: e,
+                      child: Text(e.name),
+                    ),
+                  )
                   .toList(),
-              onChanged: (CloudStorageServiceEnum? value) {
+              onChanged: (StorageType? value) {
                 setState(() {
                   selection = value;
                 });
