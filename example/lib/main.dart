@@ -72,8 +72,8 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                      builder: (_) =>
-                          CloudStorageDemo(delegateKey: selection!)),
+                    builder: (_) => CloudStorageDemo(delegateKey: selection!),
+                  ),
                 );
               },
               child: const Text('Start demo'),
