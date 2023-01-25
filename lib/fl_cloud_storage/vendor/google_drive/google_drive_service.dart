@@ -48,6 +48,11 @@ class GoogleDriveService
 
   late _GoogleAuthClient _authenticateClient;
 
+  late bool _isSignedIn = false;
+
+  @override
+  bool get isSignedIn => _isSignedIn;
+
   /// Google drive service is supported on all platforms.
   ///
   static List<PlatformSupportEnum> get supportedPlatforms => [];
@@ -77,13 +82,11 @@ class GoogleDriveService
   @override
   Future<bool> authenticate() async {
     final googleSignIn = GoogleSignIn(
-      scopes: googleDriveSingleUserScope,
+      scopes: googleDriveFullScope,
     );
-    final _isSignedIn = await googleSignIn.isSignedIn();
-    GoogleSignInAccount? googleUser = googleSignIn.currentUser;
-    if (!_isSignedIn) {
-      googleUser = await _getGoogleUser(googleSignIn);
-    }
+    // final _isSignedIn = await googleSignIn.isSignedIn();
+    final GoogleSignInAccount? googleUser =
+        googleSignIn.currentUser ?? await _getGoogleUser(googleSignIn);
 
     if (googleUser != null) {
       final Map<String, String> authHeaders = await googleUser.authHeaders;
@@ -93,7 +96,7 @@ class GoogleDriveService
         'Failed to obtain google user which shall be authenticated!',
       );
     }
-    return googleSignIn.isSignedIn();
+    return _isSignedIn = await googleSignIn.isSignedIn();
   }
 
   Future<GoogleSignInAccount?> _getGoogleUser(GoogleSignIn googleSignIn) async {
@@ -106,6 +109,13 @@ class GoogleDriveService
       }
     }
     return null;
+  }
+
+  @override
+  Future<bool> logout() async {
+    final googleSignIn = GoogleSignIn();
+    await googleSignIn.signOut();
+    return _isSignedIn = await googleSignIn.isSignedIn();
   }
 
   @override

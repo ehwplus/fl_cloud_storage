@@ -10,9 +10,15 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
 
   // AUTH
 
+  /// Whether the client has an active session running with this service.
+  bool get isSignedIn;
+
   /// Authenticates the client and establishes a session to securely exchange
   /// files.
   Future<bool> authenticate();
+
+  /// Logs the client out and ends the session.
+  Future<bool> logout();
 
   /// Requests permissions/scopes
   /// This method is invoked whenever there is insufficient permission and

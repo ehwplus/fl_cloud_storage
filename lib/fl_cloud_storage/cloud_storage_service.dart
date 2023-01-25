@@ -22,7 +22,10 @@ enum StorageType {
 }
 
 /// Root logger.
-final Logger log = Logger(printer: MyPrinter('FL_CLOUD_STORAGE'));
+final Logger log = Logger(
+  printer: MyPrinter('FL_CLOUD_STORAGE'),
+  level: Level.verbose,
+);
 
 /// This class is the entrypoint for the fl_cloud_storage package. It is a
 /// factory that - given the [delegateKey] generates the according delegate
@@ -56,10 +59,23 @@ class CloudStorageService {
 
   late ICloudService _delegate;
 
+  /// Whether the client is signed in or not.
+  bool get isSignedIn => _delegate.isSignedIn;
+
   /// Invokes the [authenticate] method of the delegate instance.
   FutureOr<bool> authenticate() {
     try {
       return _delegate.authenticate();
+    } catch (ex) {
+      log.e(ex);
+    }
+    return false;
+  }
+
+  /// Invokes the [logout] method of the delegate instance.
+  FutureOr<bool> logout() {
+    try {
+      return _delegate.logout();
     } catch (ex) {
       log.e(ex);
     }

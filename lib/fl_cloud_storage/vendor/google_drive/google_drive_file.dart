@@ -22,4 +22,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       media: media ?? this.media,
     );
   }
+
+  @override
+  String get content => media?.stream.toString() ?? 'No content';
 }
