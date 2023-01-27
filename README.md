@@ -24,19 +24,24 @@ fl_cloud_storage
 
 ## Supported clouds
 
-|                 | Google Drive | iCloud |
-|-----------------|--------------|--------|
-| Authenticate    |              |        |
-| Authorize       |              |        |
-| Upload files    |              |        |
-| Download files  |              |        |
-| Delete files    |              |        |
-| iOS support     |              |        |
-| Android support |              |        |
-| Web support     |              |        |
-| MacOS support   |              |        |
-| Windows support |              |        |
-| Linux support   |              |        |
+|                 | Google Drive | Dropbox |
+|-----------------|--------------|---------|
+| Authenticate    |       ✓      |         |
+| Authorize       |     (✓*1)    |         |
+| Upload files    |       ✓      |         |
+| Download files  |       ✓      |         |
+| Delete files    |       ✓      |         |
+| iOS support     |       ✓      |         |
+| Android support |       ✓      |         |
+| Web support     |       ✓      |         |
+| MacOS support   |       ?      |         |
+| Windows support |       ?      |         |
+| Linux support   |       ?      |         |
+
+*1 Requesting full scopes right now, so full read and write access.
+```
+[v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope]
+```
 
 ## Usage
 
