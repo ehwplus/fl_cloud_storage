@@ -89,7 +89,7 @@ class _CloudStorageDemoState extends State<CloudStorageDemo> {
                     ],
                   ),
                   FutureBuilder(
-                    future: Future.value(svc.listAllFiles()),
+                    future: Future.value(svc.getAllFiles()),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         List files = snapshot.data!;

@@ -174,8 +174,7 @@ class GoogleDriveService
   }
 
   @override
-  Future<List<GoogleDriveFile>> listAllFiles(
-      {GoogleDriveFolder? folder}) async {
+  Future<List<GoogleDriveFile>> getAllFiles({GoogleDriveFolder? folder}) async {
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
@@ -239,7 +238,41 @@ class GoogleDriveService
   Future<List<GoogleDriveFile>> downloadFolder({
     required GoogleDriveFolder folder,
   }) async {
-    final files = await listAllFiles(folder: folder);
+    final files = await getAllFiles(folder: folder);
     return Future.wait(files.map((file) => downloadFile(file: file)).toList());
+  }
+
+  @override
+  Future<List<GoogleDriveFolder>> getAllFolders(
+      {GoogleDriveFolder? folder}) async {
+    // Completes with a commons.ApiRequestError if the API endpoint returned an error
+    final v3.FileList res;
+    if (folder == null) {
+      res = await _driveApi.files
+          .list(q: "mimeType = 'application/vnd.google-apps.folder'");
+    } else {
+      res = await _driveApi.files.list(
+        q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents",
+      );
+    }
+    if (res.nextPageToken != null) {
+      // TODO complete the files list
+    }
+    if (res.files == null) {
+      throw Exception('Unable to list all files!');
+    }
+    return res.files!
+        .map((folder) => GoogleDriveFolder(folder: folder))
+        .toList();
+  }
+
+  @override
+  Future<GoogleDriveFolder?> getFolderByName(String name) async {
+    final v3.FileList res = await _driveApi.files.list(
+      q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
+    );
+    return res.files?.length == 1
+        ? GoogleDriveFolder(folder: res.files![0])
+        : null;
   }
 }

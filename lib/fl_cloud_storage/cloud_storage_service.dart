@@ -145,12 +145,34 @@ class CloudStorageService {
     return [];
   }
 
-  /// Invokes the [listAllFiles] method of the delegate instance.
-  FutureOr<List<CloudFile<dynamic>>> listAllFiles({
+  /// Invokes the [getAllFiles] method of the delegate instance.
+  FutureOr<List<CloudFile<dynamic>>> getAllFiles({
     CloudFolder<dynamic>? folder,
   }) {
     try {
-      return _delegate.listAllFiles(folder: folder);
+      return _delegate.getAllFiles(folder: folder);
+    } catch (ex) {
+      log.e(ex);
+    }
+    return [];
+  }
+
+  /// Invokes the [getFolderByName] method of the delegate instance.
+  FutureOr<CloudFolder<dynamic>?> getFolderByName(String name) {
+    try {
+      return _delegate.getFolderByName(name);
+    } catch (ex) {
+      log.e(ex);
+    }
+    return null;
+  }
+
+  /// Invokes the [getAllFolders] method of the delegate instance.
+  FutureOr<List<CloudFolder<dynamic>>> getAllFolders({
+    CloudFolder<dynamic>? folder,
+  }) {
+    try {
+      return _delegate.getAllFolders(folder: folder);
     } catch (ex) {
       log.e(ex);
     }
