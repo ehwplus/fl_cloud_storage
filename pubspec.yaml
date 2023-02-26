@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_sign_in: ^5.4.3
+  google_sign_in: ^6.0.0
   googleapis: ^9.2.0
   json_annotation: ^4.0.1
   logger: ^1.1.0
