@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:googleapis/drive/v3.dart' as v3;
 
 class CloudStorageDemo extends StatefulWidget {
   const CloudStorageDemo({Key? key, required this.delegateKey})
@@ -155,16 +154,11 @@ class _CloudStorageDemoState extends State<CloudStorageDemo> {
                   ),
                   OutlinedButton(
                     onPressed: () async {
-                      final List<int> bytes = utf8.encode('erjkngekrngerkjngf');
-                      final Stream<List<int>> mediaStream = Stream.value(bytes);
+                      final List<int> bytes = utf8.encode('Das Wandern ist des Müllers Lust.');
                       final file = GoogleDriveFile(
-                        file: v3.File()
-                          ..name = 'random.txt'
-                          ..parents = [],
-                        media: v3.Media(
-                          mediaStream,
-                          bytes.length,
-                        ),
+                        fileName: 'wandern.txt',
+                        parents: [],
+                        bytes: bytes,
                       );
                       await svc.uploadFile(file: file);
                       setState(() {}); // refresh view

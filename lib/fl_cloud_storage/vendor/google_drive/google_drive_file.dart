@@ -3,23 +3,42 @@ import 'package:googleapis/drive/v3.dart' as drive;
 
 class GoogleDriveFile implements CloudFile<drive.File> {
   GoogleDriveFile({
-    required this.file,
-    required this.media,
+    required this.fileName,
+    this.parents,
+    required this.bytes,
   }) : super();
 
+  final String fileName;
+
+  final List<String>? parents;
+
+  final List<int> bytes;
+
   @override
-  final drive.File file;
+  drive.File get file {
+    return drive.File()
+      ..name = fileName
+      ..parents = parents;
+  }
 
   /// The payload of this Google Drive file.
-  final drive.Media? media;
+  drive.Media? get media {
+    final Stream<List<int>> mediaStream = Stream.value(bytes);
+    return drive.Media(
+      mediaStream,
+      bytes.length,
+    );
+  }
 
   GoogleDriveFile copyWith({
-    drive.File? file,
-    drive.Media? media,
+    String? fileName,
+    List<String>? parents,
+    List<int>? bytes,
   }) {
     return GoogleDriveFile(
-      file: file ?? this.file,
-      media: media ?? this.media,
+      fileName: fileName ?? this.fileName,
+      parents: parents ?? this.parents,
+      bytes: bytes ?? this.bytes,
     );
   }
 
