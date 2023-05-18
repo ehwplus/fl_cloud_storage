@@ -165,15 +165,17 @@ class GoogleDriveService
   Future<GoogleDriveFile> uploadFile({
     required GoogleDriveFile file,
     GoogleDriveFolder? parent,
-    bool overwrite = false,
+    bool overwrite = true,
   }) async {
     if (parent != null && parent.folder.id != null) {
       if (!(file.file.parents?.contains(parent.folder.id) ?? true)) {
         file.file.parents = [...?file.file.parents, parent.folder.id!];
       }
     }
+    final uploadedFile = await _driveApi.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
-      file: await _driveApi.files.create(file.file, uploadMedia: file.media),
+      fileName: uploadedFile.name,
+      parents: uploadedFile.parents,
     );
   }
 
@@ -198,7 +200,7 @@ class GoogleDriveService
       throw Exception('Unable to list all files!');
     }
     return res.files!
-        .map((file) => GoogleDriveFile(file: file, media: null))
+        .map((file) => GoogleDriveFile(fileName: file.name!, parents: file.parents, bytes: null))
         .toList();
   }
 

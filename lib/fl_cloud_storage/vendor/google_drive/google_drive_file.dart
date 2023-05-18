@@ -6,13 +6,16 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     required this.fileName,
     this.parents,
     required this.bytes,
-  }) : super();
+    drive.Media? media,
+  }) : _media = media, super();
 
   final String fileName;
 
   final List<String>? parents;
 
-  final List<int> bytes;
+  final List<int>? bytes;
+
+  final drive.Media? _media;
 
   @override
   drive.File get file {
@@ -23,10 +26,18 @@ class GoogleDriveFile implements CloudFile<drive.File> {
 
   /// The payload of this Google Drive file.
   drive.Media? get media {
-    final Stream<List<int>> mediaStream = Stream.value(bytes);
+    if (_media != null) {
+      return _media;
+    }
+
+    if (bytes == null) {
+      return null;
+    }
+
+    final Stream<List<int>> mediaStream = Stream.value(bytes!);
     return drive.Media(
       mediaStream,
-      bytes.length,
+      bytes!.length,
     );
   }
 
@@ -34,6 +45,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     String? fileName,
     List<String>? parents,
     List<int>? bytes,
+    drive.Media? media,
   }) {
     return GoogleDriveFile(
       fileName: fileName ?? this.fileName,
