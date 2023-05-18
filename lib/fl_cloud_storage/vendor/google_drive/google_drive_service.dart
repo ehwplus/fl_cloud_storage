@@ -2,6 +2,7 @@ import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_service.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/platform_support_enum.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_folder.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart'
     show GoogleSignIn, GoogleSignInAccount;
 import 'package:googleapis/drive/v3.dart' as v3;
@@ -101,6 +102,9 @@ class GoogleDriveService
 
   Future<GoogleSignInAccount?> _getGoogleUser(GoogleSignIn googleSignIn) async {
     try {
+      if (kIsWeb) {
+        return await googleSignIn.signIn();
+      }
       return (await googleSignIn.signInSilently(suppressErrors: false)) ??
           (interactiveLogin ? await googleSignIn.signIn() : null);
     } catch (e) {
