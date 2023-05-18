@@ -31,7 +31,7 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
   // FILES
 
   /// List all files or those of a folder if not null
-  Future<List<FILE>> listAllFiles({FOLDER? folder});
+  Future<List<FILE>> getAllFiles({FOLDER? folder});
 
   /// Create or update a file
   /// This method is meant to be idempotent but must not lead to data loss when
@@ -49,6 +49,14 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
   Future<FILE> downloadFile({required FILE file});
 
   // FOLDERS
+
+  /// List all folders in the storage vendor.
+  /// If optionally a folder is passed as parameter, then all folders in that
+  /// folder will be returned.
+  Future<List<FOLDER>> getAllFolders({FOLDER? folder});
+
+  /// Get a [CloudFolder] by name.
+  Future<FOLDER?> getFolderByName(String name);
 
   /// Create or update a folder
   /// This method is meant to be idempotent.
