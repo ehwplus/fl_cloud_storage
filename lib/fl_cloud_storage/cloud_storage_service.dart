@@ -6,21 +6,6 @@ import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_dri
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
-/// The available delegates for the [CloudStorageService].
-enum StorageType {
-  GOOGLE_DRIVE(name: 'Google Drive', supportedPlatforms: {
-    PlatformSupportEnum.ANDROID,
-    PlatformSupportEnum.IOS,
-    PlatformSupportEnum.WEB,
-  });
-
-  // add your cloud provider enum here
-
-  const StorageType({required this.name, required this.supportedPlatforms});
-  final String name;
-  final Set<PlatformSupportEnum> supportedPlatforms;
-}
-
 /// Root logger.
 final Logger log = Logger(
   printer: MyPrinter('FL_CLOUD_STORAGE'),
