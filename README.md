@@ -25,11 +25,6 @@
 | Windows support |       ?      |         |
 | Linux support   |       ?      |         |
 
-*1 Requesting full scopes right now, so full read and write access.
-```
-[v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope]
-```
-
 ## Usage
 
 Import the package:
@@ -39,8 +34,13 @@ import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 
 Initialize the service you want to use:
 ```
-final driveService = await CloudStorageService.initialize(StorageType.GOOGLE_DRIVE);
+final driveService = await CloudStorageService.initialize(
+  StorageType.GOOGLE_DRIVE,
+  cloudStorageConfig: null, // optional parameter, vendor specific implementation
+);
 ```
+
+If you need special scopes, read the section for each cloud storage vendor.
 
 1.a) Login:
 ```
@@ -60,4 +60,26 @@ cloudStorageService.logout();
 4.a) List files on cloud storage:
 ```
 cloudStorageService.getAllFiles()
+```
+
+## Google Drive Cloud Storage
+
+2.) Authorization
+
+By default the app scope is used for Google Drive:
+```
+[v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope]
+```
+
+If you need full read and write access, add a cloudStorageConfig:
+```
+final driveService = await CloudStorageService.initialize<GoogleDriveScope>(
+  StorageType.GOOGLE_DRIVE,
+  cloudStorageConfig: GoogleDriveScope.full,
+);
+```
+
+Behind the scens this scope is asked for:
+```
+[v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope]
 ```

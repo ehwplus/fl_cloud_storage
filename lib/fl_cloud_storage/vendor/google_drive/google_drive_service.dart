@@ -8,6 +8,8 @@ import 'package:google_sign_in/google_sign_in.dart'
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
+import 'google_drive_scope.dart';
+
 const googleDriveSingleUserScope = [
   v3.DriveApi.driveAppdataScope,
   v3.DriveApi.driveFileScope
@@ -36,7 +38,7 @@ class GoogleDriveService
     implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
   /// This class cannot be instantiated synchronously.
   /// Use `await GoogleDriveService.initialize()`.
-  GoogleDriveService._();
+  GoogleDriveService._(this.driveScope);
 
   /// Whether to do the google login silently or interactively.
   /// A previously authenticated google user can be logged in silently.
@@ -45,11 +47,13 @@ class GoogleDriveService
 
   /// The [v3.DriveApi] which is used to communicate with the google drive
   /// service.
-  late v3.DriveApi _driveApi;
+  v3.DriveApi? _driveApi;
 
   late _GoogleAuthClient _authenticateClient;
 
-  late bool _isSignedIn = false;
+  bool _isSignedIn = false;
+
+  final GoogleDriveScope driveScope;
 
   @override
   bool get isSignedIn => _isSignedIn;
@@ -58,8 +62,12 @@ class GoogleDriveService
   ///
   static List<PlatformSupportEnum> get supportedPlatforms => [];
 
-  static Future<GoogleDriveService> initialize() async {
-    final instance = GoogleDriveService._();
+  static Future<GoogleDriveService> initialize({
+    GoogleDriveScope? driveScope,
+  }) async {
+    final instance = GoogleDriveService._(
+      driveScope ?? GoogleDriveScope.appData,
+    );
     await instance.initializeApi();
     return instance;
   }
@@ -83,9 +91,10 @@ class GoogleDriveService
   @override
   Future<bool> authenticate() async {
     final googleSignIn = GoogleSignIn(
-      scopes: googleDriveFullScope,
+      scopes: driveScope == GoogleDriveScope.appData
+          ? googleDriveSingleUserScope
+          : googleDriveFullScope,
     );
-    // final _isSignedIn = await googleSignIn.isSignedIn();
     final GoogleSignInAccount? googleUser =
         googleSignIn.currentUser ?? await _getGoogleUser(googleSignIn);
 
@@ -93,9 +102,7 @@ class GoogleDriveService
       final Map<String, String> authHeaders = await googleUser.authHeaders;
       _authenticateClient = _GoogleAuthClient(authHeaders);
     } else {
-      throw Exception(
-        'Failed to obtain google user which shall be authenticated!',
-      );
+      throw Exception('Failed to obtain google user which shall be authenticated!');
     }
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
@@ -124,37 +131,45 @@ class GoogleDriveService
 
   @override
   Future<bool> authorize() {
-    throw UnimplementedError();
+    // Authentication and authorization is done in the same step.
+    // So do the same.
+    return authenticate();
   }
 
   // FILES
 
   @override
-  Future<bool> deleteFile({required GoogleDriveFile file}) {
+  Future<bool> deleteFile({required GoogleDriveFile file}) async {
+    if (_driveApi == null) {
+      return false;
+    }
+
     if (file.file.id == null) {
-      throw Exception(
-        'Must provide a file id of the file which shall be downloaded!',
-      );
+      throw Exception('Must provide a file id of the file which shall be downloaded!');
     }
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
     try {
-      _driveApi.files.delete(file.file.id!);
-      return Future.value(true);
+      await _driveApi!.files.delete(file.file.id!);
+      return true;
     } catch (ex) {
-      return Future.value(false);
+      return false;
     }
   }
 
   @override
   Future<GoogleDriveFile> downloadFile({required GoogleDriveFile file}) async {
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to download file ${file.fileName}.');
+    }
+
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     if (file.file.id == null) {
       throw Exception(
         'Must provide a file id of the file which shall be deleted!',
       );
     }
-    final v3.Media media = await _driveApi.files.get(
+    final v3.Media media = await _driveApi!.files.get(
       file.file.id!,
       downloadOptions: v3.DownloadOptions.fullMedia,
     ) as v3.Media;
@@ -167,12 +182,16 @@ class GoogleDriveService
     GoogleDriveFolder? parent,
     bool overwrite = true,
   }) async {
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to upload file.');
+    }
+
     if (parent != null && parent.folder.id != null) {
       if (!(file.file.parents?.contains(parent.folder.id) ?? true)) {
         file.file.parents = [...?file.file.parents, parent.folder.id!];
       }
     }
-    final uploadedFile = await _driveApi.files.create(file.file, uploadMedia: file.media);
+    final uploadedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
       fileName: uploadedFile.name,
       parents: uploadedFile.parents,
@@ -181,14 +200,18 @@ class GoogleDriveService
 
   @override
   Future<List<GoogleDriveFile>> getAllFiles({GoogleDriveFolder? folder}) async {
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to get all files.');
+    }
+
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
-      res = await _driveApi.files.list(
+      res = await _driveApi!.files.list(
         $fields: 'files/*',
       );
     } else {
-      res = await _driveApi.files.list(
+      res = await _driveApi!.files.list(
         $fields: 'files/*',
         q: "'${folder.folder.id}' in parents",
       );
@@ -211,19 +234,27 @@ class GoogleDriveService
     required String name,
     GoogleDriveFolder? parent,
   }) async {
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to upload folder $name.');
+    }
+
     final folder = v3.File()
       ..name = name
       ..mimeType = 'application/vnd.google-apps.folder';
     if (parent != null) {
       folder.parents = [];
     }
-    return GoogleDriveFolder(folder: await _driveApi.files.create(folder));
+    return GoogleDriveFolder(folder: await _driveApi!.files.create(folder));
   }
 
   @override
   Future<bool> deleteFolder({
     required GoogleDriveFolder folder,
   }) {
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to delete folder.');
+    }
+
     if (folder.folder.id == null) {
       // log.e this
       throw Exception(
@@ -233,7 +264,7 @@ class GoogleDriveService
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
     try {
-      _driveApi.files.delete(folder.folder.id!);
+      _driveApi!.files.delete(folder.folder.id!);
       return Future.value(true);
     } catch (ex) {
       return Future.value(false);
@@ -251,13 +282,17 @@ class GoogleDriveService
   @override
   Future<List<GoogleDriveFolder>> getAllFolders(
       {GoogleDriveFolder? folder}) async {
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to get all folders.');
+    }
+
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
-      res = await _driveApi.files
+      res = await _driveApi!.files
           .list(q: "mimeType = 'application/vnd.google-apps.folder'");
     } else {
-      res = await _driveApi.files.list(
+      res = await _driveApi!.files.list(
         q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents",
       );
     }
@@ -274,7 +309,11 @@ class GoogleDriveService
 
   @override
   Future<GoogleDriveFolder?> getFolderByName(String name) async {
-    final v3.FileList res = await _driveApi.files.list(
+    if (_driveApi == null) {
+      throw Exception('DriveApi is null, unable to get folder $name.');
+    }
+
+    final v3.FileList res = await _driveApi!.files.list(
       q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
     );
     return res.files?.length == 1

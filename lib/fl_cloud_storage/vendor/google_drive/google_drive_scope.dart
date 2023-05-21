@@ -1,0 +1,4 @@
+enum GoogleDriveScope {
+  appData,
+  full;
+}

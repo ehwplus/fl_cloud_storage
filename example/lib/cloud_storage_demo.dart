@@ -4,17 +4,21 @@ import 'dart:convert';
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/material.dart';
 
-class CloudStorageDemo extends StatefulWidget {
-  const CloudStorageDemo({Key? key, required this.delegateKey})
-      : super(key: key);
+class GoogleDriveDemo extends StatefulWidget {
+  const GoogleDriveDemo({super.key,
+    required this.delegateKey,
+    required this.driveScope,
+  });
 
   final StorageType delegateKey;
 
+  final GoogleDriveScope driveScope;
+
   @override
-  State<CloudStorageDemo> createState() => _CloudStorageDemoState();
+  State<GoogleDriveDemo> createState() => _GoogleDriveDemoState();
 }
 
-class _CloudStorageDemoState extends State<CloudStorageDemo> {
+class _GoogleDriveDemoState extends State<GoogleDriveDemo> {
   late Future<CloudStorageService> service;
 
   late bool isSignedIn;
@@ -22,7 +26,10 @@ class _CloudStorageDemoState extends State<CloudStorageDemo> {
   @override
   void initState() {
     super.initState();
-    service = Future.value(CloudStorageService.initialize(widget.delegateKey));
+    service = Future.value(CloudStorageService.initialize<GoogleDriveScope>(
+      widget.delegateKey,
+      cloudStorageConfig: widget.driveScope,
+    ));
     service.then((value) => isSignedIn = value.isSignedIn);
   }
 

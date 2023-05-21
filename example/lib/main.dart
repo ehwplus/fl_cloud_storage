@@ -37,6 +37,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   StorageType? selection = StorageType.GOOGLE_DRIVE;
 
+  GoogleDriveScope? driveScope;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,12 +69,32 @@ class _MyHomePageState extends State<MyHomePage> {
                 });
               },
             ),
+            if (selection == StorageType.GOOGLE_DRIVE)
+              DropdownButton<GoogleDriveScope>(
+                value: driveScope,
+                items: GoogleDriveScope.values
+                    .map<DropdownMenuItem<GoogleDriveScope>>(
+                      (GoogleDriveScope e) => DropdownMenuItem(
+                    key: Key(e.name),
+                    value: e,
+                    child: Text(e.name),
+                  ),
+                ).toList(),
+                onChanged: (GoogleDriveScope? value) {
+                  setState(() {
+                    driveScope = value;
+                  });
+                },
+              ),
             const SizedBox(height: 15),
             OutlinedButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => CloudStorageDemo(delegateKey: selection!),
+                    builder: (_) => GoogleDriveDemo(
+                      delegateKey: selection!,
+                      driveScope: driveScope!,
+                    ),
                   ),
                 );
               },

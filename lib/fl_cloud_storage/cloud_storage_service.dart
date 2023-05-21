@@ -21,13 +21,16 @@ class CloudStorageService {
   CloudStorageService._(this.delegateKey);
 
   /// Maybe-async initialization of the cloud storage service.
-  static FutureOr<CloudStorageService> initialize(
+  static FutureOr<CloudStorageService> initialize<CloudStorageConfig>(
     StorageType delegate,
+    {CloudStorageConfig? cloudStorageConfig,}
   ) async {
     final instance = CloudStorageService._(delegate);
     switch (delegate) {
       case StorageType.GOOGLE_DRIVE:
-        instance._delegate = await GoogleDriveService.initialize();
+        instance._delegate = await GoogleDriveService.initialize(
+          driveScope: cloudStorageConfig as GoogleDriveScope,
+        );
         break;
 
       // add your cloud providers here
