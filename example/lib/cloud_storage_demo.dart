@@ -5,7 +5,8 @@ import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/material.dart';
 
 class GoogleDriveDemo extends StatefulWidget {
-  const GoogleDriveDemo({super.key,
+  const GoogleDriveDemo({
+    super.key,
     required this.delegateKey,
     required this.driveScope,
   });
@@ -161,7 +162,8 @@ class _GoogleDriveDemoState extends State<GoogleDriveDemo> {
                   ),
                   OutlinedButton(
                     onPressed: () async {
-                      final List<int> bytes = utf8.encode('Das Wandern ist des Müllers Lust.');
+                      final List<int> bytes =
+                          utf8.encode('Das Wandern ist des Müllers Lust.');
                       final file = GoogleDriveFile(
                         fileName: 'wandern.txt',
                         parents: [],

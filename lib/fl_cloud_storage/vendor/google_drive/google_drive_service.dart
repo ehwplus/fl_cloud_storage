@@ -1,14 +1,9 @@
-import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_service.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/util/platform_support_enum.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_file.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_folder.dart';
+import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart'
     show GoogleSignIn, GoogleSignInAccount;
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
-
-import 'google_drive_scope.dart';
 
 const googleDriveSingleUserScope = [
   v3.DriveApi.driveAppdataScope,
@@ -102,7 +97,8 @@ class GoogleDriveService
       final Map<String, String> authHeaders = await googleUser.authHeaders;
       _authenticateClient = _GoogleAuthClient(authHeaders);
     } else {
-      throw Exception('Failed to obtain google user which shall be authenticated!');
+      throw Exception(
+          'Failed to obtain google user which shall be authenticated!');
     }
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
@@ -145,7 +141,8 @@ class GoogleDriveService
     }
 
     if (file.file.id == null) {
-      throw Exception('Must provide a file id of the file which shall be downloaded!');
+      throw Exception(
+          'Must provide a file id of the file which shall be downloaded!');
     }
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
@@ -160,7 +157,8 @@ class GoogleDriveService
   @override
   Future<GoogleDriveFile> downloadFile({required GoogleDriveFile file}) async {
     if (_driveApi == null) {
-      throw Exception('DriveApi is null, unable to download file ${file.fileName}.');
+      throw Exception(
+          'DriveApi is null, unable to download file ${file.fileName}.');
     }
 
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
@@ -191,7 +189,8 @@ class GoogleDriveService
         file.file.parents = [...?file.file.parents, parent.folder.id!];
       }
     }
-    final uploadedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
+    final uploadedFile =
+        await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
       fileName: uploadedFile.name,
       parents: uploadedFile.parents,
@@ -223,7 +222,8 @@ class GoogleDriveService
       throw Exception('Unable to list all files!');
     }
     return res.files!
-        .map((file) => GoogleDriveFile(fileName: file.name!, parents: file.parents, bytes: null))
+        .map((file) => GoogleDriveFile(
+            fileName: file.name!, parents: file.parents, bytes: null))
         .toList();
   }
 

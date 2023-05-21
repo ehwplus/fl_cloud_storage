@@ -7,7 +7,8 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     this.parents,
     required this.bytes,
     drive.Media? media,
-  }) : _media = media, super();
+  })  : _media = media,
+        super();
 
   final String fileName;
 

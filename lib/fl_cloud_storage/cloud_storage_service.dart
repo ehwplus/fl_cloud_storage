@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/logger.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_service.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
@@ -22,9 +21,9 @@ class CloudStorageService {
 
   /// Maybe-async initialization of the cloud storage service.
   static FutureOr<CloudStorageService> initialize<CloudStorageConfig>(
-    StorageType delegate,
-    {CloudStorageConfig? cloudStorageConfig,}
-  ) async {
+    StorageType delegate, {
+    CloudStorageConfig? cloudStorageConfig,
+  }) async {
     final instance = CloudStorageService._(delegate);
     switch (delegate) {
       case StorageType.GOOGLE_DRIVE:

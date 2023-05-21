@@ -14,7 +14,7 @@
 |                 | Google Drive | Dropbox |
 |-----------------|--------------|---------|
 | Authenticate    |       ✓      |         |
-| Authorize       |     (✓*1)    |         |
+| Authorize       |       ✓      |         |
 | Upload files    |       ✓      |         |
 | Download files  |       ✓      |         |
 | Delete files    |       ✓      |         |

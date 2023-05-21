@@ -75,11 +75,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 items: GoogleDriveScope.values
                     .map<DropdownMenuItem<GoogleDriveScope>>(
                       (GoogleDriveScope e) => DropdownMenuItem(
-                    key: Key(e.name),
-                    value: e,
-                    child: Text(e.name),
-                  ),
-                ).toList(),
+                        key: Key(e.name),
+                        value: e,
+                        child: Text(e.name),
+                      ),
+                    )
+                    .toList(),
                 onChanged: (GoogleDriveScope? value) {
                   setState(() {
                     driveScope = value;
