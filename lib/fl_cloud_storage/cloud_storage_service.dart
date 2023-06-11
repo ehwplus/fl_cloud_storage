@@ -111,9 +111,10 @@ class CloudStorageService {
   /// Invokes the [downloadFile] method of the delegate instance.
   FutureOr<CloudFile<dynamic>?> downloadFile({
     required CloudFile<dynamic> file,
+    void Function(Uint8List bytes)? onBytesDownloaded,
   }) async {
     try {
-      return _delegate.downloadFile(file: file);
+      return _delegate.downloadFile(file: file, onBytesDownloaded: onBytesDownloaded);
     } catch (ex) {
       log.e(ex);
     }

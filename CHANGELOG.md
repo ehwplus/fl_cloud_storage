@@ -1,10 +1,7 @@
-## 0.0.3
-
-BoxFit fix
-
 ## 0.0.2
 
-Do not apply width/height if BoxFit is set
+Add void Function(Uint8List bytes)? onBytesDownloaded to CloudStorageService.downloadFile. This is required for
+displaying images on Flutter web applications.
 
 ## 0.0.1
 

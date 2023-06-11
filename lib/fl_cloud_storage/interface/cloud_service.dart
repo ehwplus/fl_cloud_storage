@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
 
@@ -46,7 +48,7 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
   Future<bool> deleteFile({required FILE file});
 
   /// Download a file
-  Future<FILE> downloadFile({required FILE file});
+  Future<FILE> downloadFile({required FILE file, void Function(Uint8List bytes)? onBytesDownloaded});
 
   // FOLDERS
 

@@ -155,7 +155,10 @@ class GoogleDriveService
   }
 
   @override
-  Future<GoogleDriveFile> downloadFile({required GoogleDriveFile file}) async {
+  Future<GoogleDriveFile> downloadFile({
+    required GoogleDriveFile file,
+    void Function(Uint8List bytes)? onBytesDownloaded,
+  }) async {
     if (_driveApi == null) {
       throw Exception(
           'DriveApi is null, unable to download file ${file.fileName}.');
@@ -163,14 +166,24 @@ class GoogleDriveService
 
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     if (file.file.id == null) {
-      throw Exception(
-        'Must provide a file id of the file which shall be deleted!',
-      );
+      throw Exception('Must provide a file id of the file which shall be downloaded!');
     }
     final v3.Media media = await _driveApi!.files.get(
       file.file.id!,
       downloadOptions: v3.DownloadOptions.fullMedia,
     ) as v3.Media;
+
+    final List<int> bytes = [];
+    media.stream.listen((List<int> data) {
+      bytes.insertAll(bytes.length, data);
+    }, onDone: () async {
+      if (onBytesDownloaded != null) {
+        onBytesDownloaded(Uint8List.fromList(bytes));
+      }
+    }, onError: (dynamic error) {
+      debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
+    });
+
     return Future.value(file.copyWith(media: media));
   }
 
