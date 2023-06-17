@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
+import 'package:fl_cloud_storage/fl_cloud_storage/model/authentication_tokens.dart';
 
 abstract class ICloudService<FILE extends CloudFile<dynamic>,
     FOLDER extends CloudFolder<dynamic>> extends Type {
@@ -18,6 +19,8 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
   /// Authenticates the client and establishes a session to securely exchange
   /// files.
   Future<bool> authenticate();
+
+  AuthenticationTokens? get authenticationTokens;
 
   /// Logs the client out and ends the session.
   Future<bool> logout();

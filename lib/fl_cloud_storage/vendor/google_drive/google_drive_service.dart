@@ -1,7 +1,7 @@
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart'
-    show GoogleSignIn, GoogleSignInAccount;
+    show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
@@ -50,6 +50,11 @@ class GoogleDriveService
 
   final GoogleDriveScope driveScope;
 
+  AuthenticationTokens? _authenticationTokens;
+
+  @override
+  AuthenticationTokens? get authenticationTokens => _authenticationTokens;
+
   @override
   bool get isSignedIn => _isSignedIn;
 
@@ -94,6 +99,12 @@ class GoogleDriveService
         googleSignIn.currentUser ?? await _getGoogleUser(googleSignIn);
 
     if (googleUser != null) {
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      _authenticationTokens = AuthenticationTokens(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
       final Map<String, String> authHeaders = await googleUser.authHeaders;
       _authenticateClient = _GoogleAuthClient(authHeaders);
     } else {
