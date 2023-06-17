@@ -49,6 +49,9 @@ class CloudStorageService {
   /// Whether the client is signed in or not.
   bool get isSignedIn => _delegate.isSignedIn;
 
+  /// Expose the tokens
+  AuthenticationTokens? get authenticationTokens => _delegate.authenticationTokens;
+
   /// Invokes the [authenticate] method of the delegate instance.
   FutureOr<bool> authenticate() {
     try {
