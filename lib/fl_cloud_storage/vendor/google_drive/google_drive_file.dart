@@ -6,6 +6,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     required this.fileName,
     this.parents,
     required this.bytes,
+    this.description,
     drive.Media? media,
   })  : _media = media,
         super();
@@ -18,10 +19,14 @@ class GoogleDriveFile implements CloudFile<drive.File> {
 
   final drive.Media? _media;
 
+  /// Optional value. Some text that is stored in the metadata of the file.
+  final String? description;
+
   @override
   drive.File get file {
     return drive.File()
       ..name = fileName
+      ..description = description
       ..parents = parents;
   }
 
@@ -44,12 +49,14 @@ class GoogleDriveFile implements CloudFile<drive.File> {
 
   GoogleDriveFile copyWith({
     String? fileName,
+    String? description,
     List<String>? parents,
     List<int>? bytes,
     drive.Media? media,
   }) {
     return GoogleDriveFile(
       fileName: fileName ?? this.fileName,
+      description: description ?? this.description,
       parents: parents ?? this.parents,
       bytes: bytes ?? this.bytes,
     );

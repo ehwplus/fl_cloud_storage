@@ -1,4 +1,8 @@
-## 0.0.3
+## 0.0.5
+
+GoogleDriveFile supports description
+
+## 0.0.4
 
 Expose idToken/accessToken
 
