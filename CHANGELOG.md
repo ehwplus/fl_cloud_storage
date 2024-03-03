@@ -1,7 +1,8 @@
-## 0.0.6
+## 0.0.7
 
-* GoogleDriveFile supports description
-* Fix: GoogleDriveFile should return file.id, otherwise download fails
+* GoogleDriveService is making it easier to get the file content
+* GoogleDriveFile meta data can contain a description
+* Fix: GoogleDriveFile should return file.id (otherwise there is to reference to the cloud file)
 
 ## 0.0.4
 

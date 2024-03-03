@@ -1,6 +1,6 @@
 name: fl_cloud_storage
 description: Store files in the cloud from Flutter apps
-version: 0.0.6
+version: 0.0.7
 homepage: https://github.com/ehwplus/fl_cloud_storage
 
 environment:

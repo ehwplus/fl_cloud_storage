@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart' show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
@@ -169,13 +171,18 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       downloadOptions: v3.DownloadOptions.fullMedia,
     ) as v3.Media;
 
+    if (onBytesDownloaded == null) {
+      final String fileContent = await utf8.decodeStream(media.stream);
+      return file.copyWith(
+        fileContent: fileContent,
+      );
+    }
+
     final List<int> bytes = [];
     media.stream.listen((List<int> data) {
       bytes.insertAll(bytes.length, data);
     }, onDone: () async {
-      if (onBytesDownloaded != null) {
-        onBytesDownloaded(Uint8List.fromList(bytes));
-      }
+      onBytesDownloaded(Uint8List.fromList(bytes));
     }, onError: (dynamic error) {
       debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
     });

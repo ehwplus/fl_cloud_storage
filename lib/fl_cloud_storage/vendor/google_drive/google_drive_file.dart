@@ -9,6 +9,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     required this.bytes,
     this.description,
     drive.Media? media,
+    this.fileContent,
   })  : _media = media,
         super();
 
@@ -23,6 +24,8 @@ class GoogleDriveFile implements CloudFile<drive.File> {
   final List<int>? bytes;
 
   final drive.Media? _media;
+
+  final String? fileContent;
 
   /// Optional value. Some text that is stored in the metadata of the file.
   final String? description;
@@ -60,6 +63,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     List<String>? parents,
     List<int>? bytes,
     drive.Media? media,
+    String? fileContent,
   }) {
     return GoogleDriveFile(
       fileId: fileId ?? this.fileId,
@@ -67,9 +71,10 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       description: description ?? this.description,
       parents: parents ?? this.parents,
       bytes: bytes ?? this.bytes,
+      fileContent: fileContent ?? this.fileContent,
     );
   }
 
   @override
-  String get content => media?.stream.toString() ?? 'No content';
+  String get content => media?.stream.toString() ?? fileContent ?? '';
 }
