@@ -1,6 +1,7 @@
-## 0.0.5
+## 0.0.6
 
-GoogleDriveFile supports description
+* GoogleDriveFile supports description
+* Fix: GoogleDriveFile should return file.id, otherwise download fails
 
 ## 0.0.4
 

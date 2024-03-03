@@ -200,6 +200,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     }
     final uploadedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
+      fileId: uploadedFile.id,
       fileName: uploadedFile.name,
       parents: uploadedFile.parents,
     );
@@ -232,6 +233,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     return res.files!
         .map(
           (file) => GoogleDriveFile(
+            fileId: file.id,
             fileName: file.name!,
             parents: file.parents,
             description: file.description,

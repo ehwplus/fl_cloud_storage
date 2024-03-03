@@ -165,6 +165,7 @@ class _GoogleDriveDemoState extends State<GoogleDriveDemo> {
                       final List<int> bytes =
                           utf8.encode('Das Wandern ist des Müllers Lust.');
                       final file = GoogleDriveFile(
+                        fileId: null,
                         fileName: 'wandern.txt',
                         description: 'Über das Wandern',
                         parents: [],
