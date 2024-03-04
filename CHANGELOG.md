@@ -1,5 +1,6 @@
-## 0.0.7
+## 0.0.8
 
+* Updating Drive files should work with GoogleDriveService.uploadFile function
 * GoogleDriveService is making it easier to get the file content
 * GoogleDriveFile meta data can contain a description
 * Fix: GoogleDriveFile should return file.id (otherwise there is to reference to the cloud file)

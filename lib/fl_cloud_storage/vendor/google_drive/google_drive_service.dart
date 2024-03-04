@@ -205,11 +205,22 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
         file.file.parents = [...?file.file.parents, parent.folder.id!];
       }
     }
-    final uploadedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
+    if (file.fileId != null) {
+      final v3.File driveFile = v3.File()
+        ..description = file.description
+        ..name = file.fileName;
+      final updatedFile = await _driveApi!.files.update(driveFile, file.fileId!, uploadMedia: file.media);
+      return file.copyWith(
+        fileId: updatedFile.id,
+        fileName: updatedFile.name,
+        parents: updatedFile.parents,
+      );
+    }
+    final cratedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
-      fileId: uploadedFile.id,
-      fileName: uploadedFile.name,
-      parents: uploadedFile.parents,
+      fileId: cratedFile.id,
+      fileName: cratedFile.name,
+      parents: cratedFile.parents,
     );
   }
 
