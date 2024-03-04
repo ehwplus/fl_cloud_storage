@@ -50,7 +50,8 @@ class CloudStorageService {
   bool get isSignedIn => _delegate.isSignedIn;
 
   /// Expose the tokens
-  AuthenticationTokens? get authenticationTokens => _delegate.authenticationTokens;
+  AuthenticationTokens? get authenticationTokens =>
+      _delegate.authenticationTokens;
 
   /// Invokes the [authenticate] method of the delegate instance.
   FutureOr<bool> authenticate() {
@@ -117,7 +118,8 @@ class CloudStorageService {
     void Function(Uint8List bytes)? onBytesDownloaded,
   }) async {
     try {
-      return _delegate.downloadFile(file: file, onBytesDownloaded: onBytesDownloaded);
+      return _delegate.downloadFile(
+          file: file, onBytesDownloaded: onBytesDownloaded);
     } catch (ex) {
       log.e(ex);
     }

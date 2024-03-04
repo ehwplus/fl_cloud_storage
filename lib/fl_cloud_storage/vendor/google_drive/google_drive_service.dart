@@ -2,14 +2,22 @@ import 'dart:convert';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart' show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
+import 'package:google_sign_in/google_sign_in.dart'
+    show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
-const googleDriveSingleUserScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope];
+const googleDriveSingleUserScope = [
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope
+];
 
 /// Scope for sharing json with other Google users
-const googleDriveFullScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope];
+const googleDriveFullScope = [
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope,
+  v3.DriveApi.driveScope
+];
 
 class _GoogleAuthClient extends http.BaseClient {
   _GoogleAuthClient(this._headers);
@@ -23,7 +31,8 @@ class _GoogleAuthClient extends http.BaseClient {
   }
 }
 
-class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
+class GoogleDriveService
+    implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
   /// This class cannot be instantiated synchronously.
   /// Use `await GoogleDriveService.initialize()`.
   GoogleDriveService._(this.driveScope);
@@ -84,12 +93,16 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   @override
   Future<bool> authenticate() async {
     final googleSignIn = GoogleSignIn(
-      scopes: driveScope == GoogleDriveScope.appData ? googleDriveSingleUserScope : googleDriveFullScope,
+      scopes: driveScope == GoogleDriveScope.appData
+          ? googleDriveSingleUserScope
+          : googleDriveFullScope,
     );
-    final GoogleSignInAccount? googleUser = googleSignIn.currentUser ?? await _getGoogleUser(googleSignIn);
+    final GoogleSignInAccount? googleUser =
+        googleSignIn.currentUser ?? await _getGoogleUser(googleSignIn);
 
     if (googleUser != null) {
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       _authenticationTokens = AuthenticationTokens(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -98,7 +111,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       final Map<String, String> authHeaders = await googleUser.authHeaders;
       _authenticateClient = _GoogleAuthClient(authHeaders);
     } else {
-      throw Exception('Failed to obtain google user which shall be authenticated!');
+      throw Exception(
+          'Failed to obtain google user which shall be authenticated!');
     }
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
@@ -141,7 +155,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     }
 
     if (file.file.id == null) {
-      throw Exception('Must provide a file id of the file which shall be downloaded!');
+      throw Exception(
+          'Must provide a file id of the file which shall be downloaded!');
     }
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
@@ -159,12 +174,14 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     void Function(Uint8List bytes)? onBytesDownloaded,
   }) async {
     if (_driveApi == null) {
-      throw Exception('DriveApi is null, unable to download file ${file.fileName}.');
+      throw Exception(
+          'DriveApi is null, unable to download file ${file.fileName}.');
     }
 
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     if (file.file.id == null) {
-      throw Exception('Must provide a file id of the file which shall be downloaded!');
+      throw Exception(
+          'Must provide a file id of the file which shall be downloaded!');
     }
     final v3.Media media = await _driveApi!.files.get(
       file.file.id!,
@@ -184,7 +201,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     }, onDone: () async {
       onBytesDownloaded(Uint8List.fromList(bytes));
     }, onError: (dynamic error) {
-      debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
+      debugPrint(
+          '[sync] Unable to store downloaded photo ${file.fileName}: $error');
     });
 
     return Future.value(file.copyWith(media: media));
@@ -209,14 +227,16 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       final v3.File driveFile = v3.File()
         ..description = file.description
         ..name = file.fileName;
-      final updatedFile = await _driveApi!.files.update(driveFile, file.fileId!, uploadMedia: file.media);
+      final updatedFile = await _driveApi!.files
+          .update(driveFile, file.fileId!, uploadMedia: file.media);
       return file.copyWith(
         fileId: updatedFile.id,
         fileName: updatedFile.name,
         parents: updatedFile.parents,
       );
     }
-    final cratedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
+    final cratedFile =
+        await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
       fileId: cratedFile.id,
       fileName: cratedFile.name,
@@ -314,7 +334,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   @override
-  Future<List<GoogleDriveFolder>> getAllFolders({GoogleDriveFolder? folder}) async {
+  Future<List<GoogleDriveFolder>> getAllFolders(
+      {GoogleDriveFolder? folder}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all folders.');
     }
@@ -322,7 +343,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
-      res = await _driveApi!.files.list(q: "mimeType = 'application/vnd.google-apps.folder'");
+      res = await _driveApi!.files
+          .list(q: "mimeType = 'application/vnd.google-apps.folder'");
     } else {
       res = await _driveApi!.files.list(
         q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents",
@@ -334,7 +356,9 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     if (res.files == null) {
       throw Exception('Unable to list all files!');
     }
-    return res.files!.map((folder) => GoogleDriveFolder(folder: folder)).toList();
+    return res.files!
+        .map((folder) => GoogleDriveFolder(folder: folder))
+        .toList();
   }
 
   @override
@@ -346,6 +370,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     final v3.FileList res = await _driveApi!.files.list(
       q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
     );
-    return res.files?.length == 1 ? GoogleDriveFolder(folder: res.files![0]) : null;
+    return res.files?.length == 1
+        ? GoogleDriveFolder(folder: res.files![0])
+        : null;
   }
 }

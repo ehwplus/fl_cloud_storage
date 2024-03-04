@@ -1,5 +1,4 @@
 class AuthenticationTokens {
-
   const AuthenticationTokens({
     required this.accessToken,
     required this.idToken,
@@ -10,5 +9,4 @@ class AuthenticationTokens {
 
   /// An OpenID Connect ID token for the authenticated user.
   final String? idToken;
-
 }

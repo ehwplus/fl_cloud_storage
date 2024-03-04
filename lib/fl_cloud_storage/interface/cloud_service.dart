@@ -51,7 +51,8 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
   Future<bool> deleteFile({required FILE file});
 
   /// Download a file
-  Future<FILE> downloadFile({required FILE file, void Function(Uint8List bytes)? onBytesDownloaded});
+  Future<FILE> downloadFile(
+      {required FILE file, void Function(Uint8List bytes)? onBytesDownloaded});
 
   // FOLDERS
 
