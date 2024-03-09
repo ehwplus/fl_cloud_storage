@@ -1,10 +1,11 @@
-## 0.0.12
+## 0.0.13
 
 * Improvement: CloudFile with getters fileId, fileName and mimeType
 * Improvement: Do not return trashed files or folders
 * Fix: GoogleDriveFile.copyWith should use media
 * Fix: getFolderByName should return at least one folder
 * Fix: uploadFolder should set parent folder of folder
+* Fix: Downloading images from Google Drive should work
 
 ## 0.0.8
 

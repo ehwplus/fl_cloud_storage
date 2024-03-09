@@ -102,7 +102,7 @@ class GoogleDriveService
 
     if (googleUser != null) {
       final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      await googleUser.authentication;
       _authenticationTokens = AuthenticationTokens(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -183,29 +183,53 @@ class GoogleDriveService
       throw Exception(
           'Must provide a file id of the file which shall be downloaded!');
     }
+
     final v3.Media media = await _driveApi!.files.get(
       file.file.id!,
       downloadOptions: v3.DownloadOptions.fullMedia,
     ) as v3.Media;
+    final contentType = file.mimeType ?? media.contentType;
 
-    if (onBytesDownloaded == null) {
-      final String fileContent = await utf8.decodeStream(media.stream);
-      return file.copyWith(
-        fileContent: fileContent,
-      );
+    bool isTextFile() {
+      if (contentType == null) {
+        return true;
+      }
+      final mimeTypeParts = contentType.split('/');
+      if (mimeTypeParts.isNotEmpty) {
+        final prefix = mimeTypeParts.first;
+        return {'application', 'message', 'model', 'text'}.contains(prefix);
+      }
+      return false;
+    }
+    if (isTextFile()) {
+      try {
+        final String fileContent = await utf8.decodeStream(media.stream);
+        return file.copyWith(
+          fileContent: fileContent,
+        );
+      } catch (e) {
+        debugPrint('Failed to download file content: $e');
+      }
     }
 
-    final List<int> bytes = [];
-    media.stream.listen((List<int> data) {
-      bytes.insertAll(bytes.length, data);
-    }, onDone: () async {
-      onBytesDownloaded(Uint8List.fromList(bytes));
-    }, onError: (dynamic error) {
-      debugPrint(
-          '[sync] Unable to store downloaded photo ${file.fileName}: $error');
-    });
+    Future<v3.Media?> getMedia() async {
+      try {
+        final List<int> bytes = [];
+        media.stream.listen((List<int> data) {
+          bytes.insertAll(bytes.length, data);
+        }, onDone: () async {
+          onBytesDownloaded?.call(Uint8List.fromList(bytes));
+        }, onError: (dynamic error) {
+          debugPrint(
+              '[sync] Unable to store downloaded photo ${file.fileName}: $error');
+        });
+        return media;
+      } catch (e) {
+        return null;
+      }
+    }
 
-    return Future.value(file.copyWith(media: media));
+    return Future.value(file.copyWith(media: await getMedia()));
   }
 
   @override
@@ -236,7 +260,7 @@ class GoogleDriveService
       );
     }
     final cratedFile =
-        await _driveApi!.files.create(file.file, uploadMedia: file.media);
+    await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
       fileId: cratedFile.id,
       fileName: cratedFile.name,
@@ -272,15 +296,15 @@ class GoogleDriveService
     return res.files!
         .map(
           (file) => GoogleDriveFile(
-            fileId: file.id,
-            fileName: file.name!,
-            parents: file.parents,
-            description: file.description,
-            mimeType: file.mimeType,
-            trashed: (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
-            bytes: null,
-          ),
-        )
+        fileId: file.id,
+        fileName: file.name!,
+        parents: file.parents,
+        description: file.description,
+        mimeType: file.mimeType,
+        trashed: (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
+        bytes: null,
+      ),
+    )
         .toList();
   }
 
