@@ -295,8 +295,8 @@ class GoogleDriveService
     final folder = v3.File()
       ..name = name
       ..mimeType = 'application/vnd.google-apps.folder';
-    if (parent != null) {
-      folder.parents = [];
+    if (parent != null && parent.folder.id != null) {
+      folder.parents = [ parent.folder.id! ];
     }
     return GoogleDriveFolder(folder: await _driveApi!.files.create(folder));
   }

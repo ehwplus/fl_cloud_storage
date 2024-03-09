@@ -1,7 +1,8 @@
-## 0.0.9
+## 0.0.10
 
 * Fix: GoogleDriveFile.copyWith should use media
 * Fix: getFolderByName should return at least one folder
+* Fix: uploadFolder should set parent folder of folder
 
 ## 0.0.8
 
