@@ -1,3 +1,8 @@
+## 0.0.9
+
+* Fix: GoogleDriveFile.copyWith should use media
+* Fix: getFolderByName should return at least one folder
+
 ## 0.0.8
 
 * Updating Drive files should work with GoogleDriveService.uploadFile function

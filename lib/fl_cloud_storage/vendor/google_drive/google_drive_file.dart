@@ -71,6 +71,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       description: description ?? this.description,
       parents: parents ?? this.parents,
       bytes: bytes ?? this.bytes,
+      media: media ?? this.media,
       fileContent: fileContent ?? this.fileContent,
     );
   }

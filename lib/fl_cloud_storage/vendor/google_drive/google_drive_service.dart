@@ -370,7 +370,10 @@ class GoogleDriveService
     final v3.FileList res = await _driveApi!.files.list(
       q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
     );
-    return res.files?.length == 1
+    if (res.files != null && res.files!.length > 1) {
+      debugPrint('[GoogleDriveService] Found more than one folder with name "$name": ${res.files!.map((e) => e.id)}');
+    }
+    return res.files?.isNotEmpty == true
         ? GoogleDriveFolder(folder: res.files![0])
         : null;
   }
