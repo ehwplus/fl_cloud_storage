@@ -102,7 +102,7 @@ class GoogleDriveService
 
     if (googleUser != null) {
       final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
+          await googleUser.authentication;
       _authenticationTokens = AuthenticationTokens(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -191,9 +191,6 @@ class GoogleDriveService
     final contentType = file.mimeType ?? media.contentType;
 
     bool isTextFile() {
-      if (contentType == null) {
-        return true;
-      }
       final mimeTypeParts = contentType.split('/');
       if (mimeTypeParts.isNotEmpty) {
         final prefix = mimeTypeParts.first;
@@ -201,6 +198,7 @@ class GoogleDriveService
       }
       return false;
     }
+
     if (isTextFile()) {
       try {
         final String fileContent = await utf8.decodeStream(media.stream);
@@ -260,7 +258,7 @@ class GoogleDriveService
       );
     }
     final cratedFile =
-    await _driveApi!.files.create(file.file, uploadMedia: file.media);
+        await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
       fileId: cratedFile.id,
       fileName: cratedFile.name,
@@ -296,15 +294,16 @@ class GoogleDriveService
     return res.files!
         .map(
           (file) => GoogleDriveFile(
-        fileId: file.id,
-        fileName: file.name!,
-        parents: file.parents,
-        description: file.description,
-        mimeType: file.mimeType,
-        trashed: (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
-        bytes: null,
-      ),
-    )
+            fileId: file.id,
+            fileName: file.name!,
+            parents: file.parents,
+            description: file.description,
+            mimeType: file.mimeType,
+            trashed:
+                (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
+            bytes: null,
+          ),
+        )
         .toList();
   }
 
