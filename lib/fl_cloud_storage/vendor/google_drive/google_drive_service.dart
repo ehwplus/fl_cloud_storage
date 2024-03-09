@@ -255,11 +255,12 @@ class GoogleDriveService
     if (folder == null) {
       res = await _driveApi!.files.list(
         $fields: 'files/*',
+        q: 'trashed=false',
       );
     } else {
       res = await _driveApi!.files.list(
         $fields: 'files/*',
-        q: "'${folder.folder.id}' in parents",
+        q: "'${folder.folder.id}' in parents and trashed=false",
       );
     }
     if (res.nextPageToken != null) {
@@ -296,7 +297,7 @@ class GoogleDriveService
       ..name = name
       ..mimeType = 'application/vnd.google-apps.folder';
     if (parent != null && parent.folder.id != null) {
-      folder.parents = [ parent.folder.id! ];
+      folder.parents = [parent.folder.id!];
     }
     return GoogleDriveFolder(folder: await _driveApi!.files.create(folder));
   }
@@ -343,11 +344,11 @@ class GoogleDriveService
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
-      res = await _driveApi!.files
-          .list(q: "mimeType = 'application/vnd.google-apps.folder'");
+      res = await _driveApi!.files.list(
+          q: "mimeType = 'application/vnd.google-apps.folder' and trashed=false");
     } else {
       res = await _driveApi!.files.list(
-        q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents",
+        q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents and trashed=false",
       );
     }
     if (res.nextPageToken != null) {
@@ -371,7 +372,8 @@ class GoogleDriveService
       q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
     );
     if (res.files != null && res.files!.length > 1) {
-      debugPrint('[GoogleDriveService] Found more than one folder with name "$name": ${res.files!.map((e) => e.id)}');
+      debugPrint(
+          '[GoogleDriveService] Found more than one folder with name "$name": ${res.files!.map((e) => e.id)}');
     }
     return res.files?.isNotEmpty == true
         ? GoogleDriveFolder(folder: res.files![0])

@@ -1,5 +1,6 @@
-## 0.0.10
+## 0.0.11
 
+* Improvement: Do not return trashed files or folders
 * Fix: GoogleDriveFile.copyWith should use media
 * Fix: getFolderByName should return at least one folder
 * Fix: uploadFolder should set parent folder of folder
