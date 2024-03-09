@@ -10,13 +10,15 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     this.description,
     drive.Media? media,
     this.fileContent,
+    this.mimeType,
+    this.trashed,
   })  : _media = media,
         super();
 
-  /// Can be null if file is just created but not uploaded yet.
-  /// Be aware, that a file without [fileId] cannot be used to download it from cloud.
+  @override
   final String? fileId;
 
+  @override
   final String fileName;
 
   final List<String>? parents;
@@ -27,8 +29,13 @@ class GoogleDriveFile implements CloudFile<drive.File> {
 
   final String? fileContent;
 
+  @override
+  final String? mimeType;
+
   /// Optional value. Some text that is stored in the metadata of the file.
   final String? description;
+
+  final bool? trashed;
 
   @override
   drive.File get file {
@@ -36,6 +43,8 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       ..id = fileId
       ..name = fileName
       ..description = description
+      ..mimeType = mimeType
+      ..trashed = trashed
       ..parents = parents;
   }
 
@@ -61,6 +70,8 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     String? fileName,
     String? description,
     List<String>? parents,
+    String? mimeType,
+    bool? trashed,
     List<int>? bytes,
     drive.Media? media,
     String? fileContent,
@@ -72,7 +83,9 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       parents: parents ?? this.parents,
       bytes: bytes ?? this.bytes,
       media: media ?? this.media,
+      mimeType: mimeType ?? this.mimeType,
       fileContent: fileContent ?? this.fileContent,
+      trashed: trashed ?? this.trashed,
     );
   }
 

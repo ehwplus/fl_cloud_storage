@@ -276,6 +276,8 @@ class GoogleDriveService
             fileName: file.name!,
             parents: file.parents,
             description: file.description,
+            mimeType: file.mimeType,
+            trashed: (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
             bytes: null,
           ),
         )
