@@ -107,13 +107,16 @@ class GoogleDriveService
     final GoogleSignInAccount? account = await _getGoogleUser(googleSignIn);
 
     final isAuthorizedForMobile = !kIsWeb && account != null;
-    final isAuthorizedForWeb = kIsWeb && account != null && await googleSignIn.canAccessScopes(googleSignIn.scopes);
+    final isAuthorizedForWeb = kIsWeb &&
+        account != null &&
+        await googleSignIn.canAccessScopes(googleSignIn.scopes);
     if (!isAuthorizedForMobile && !isAuthorizedForWeb) {
       throw Exception('User is not authorized!');
     }
 
     final GoogleSignInAuthentication googleAuth = await account.authentication;
-    _authenticationTokens = AuthenticationTokens(accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
+    _authenticationTokens = AuthenticationTokens(
+        accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
 
     // set auth headers for the drive api
     final Map<String, String> authHeaders = await account.authHeaders;

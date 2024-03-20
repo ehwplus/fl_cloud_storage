@@ -1,3 +1,7 @@
+## 0.0.14
+
+* Login at web should work
+
 ## 0.0.13
 
 * Improvement: CloudFile with getters fileId, fileName and mimeType
