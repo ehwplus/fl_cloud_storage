@@ -8,7 +8,7 @@ import 'package:logger/logger.dart';
 /// Root logger.
 final Logger log = Logger(
   printer: MyPrinter('FL_CLOUD_STORAGE'),
-  level: Level.verbose,
+  level: Level.trace,
 );
 
 /// This class is the entrypoint for the fl_cloud_storage package. It is a

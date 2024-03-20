@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
+import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart'
     show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
@@ -97,37 +98,39 @@ class GoogleDriveService
           ? googleDriveSingleUserScope
           : googleDriveFullScope,
     );
-    final GoogleSignInAccount? googleUser =
-        googleSignIn.currentUser ?? await _getGoogleUser(googleSignIn);
 
-    if (googleUser != null) {
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      _authenticationTokens = AuthenticationTokens(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+    // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
+    //
+    // It is recommended by Google Identity Services to render both the One Tap UX
+    // and the Google Sign In button together to "reduce friction and improve
+    // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
+    final GoogleSignInAccount? account = await _getGoogleUser(googleSignIn);
 
-      final Map<String, String> authHeaders = await googleUser.authHeaders;
-      _authenticateClient = _GoogleAuthClient(authHeaders);
-    } else {
-      throw Exception(
-          'Failed to obtain google user which shall be authenticated!');
+    final isAuthorizedForMobile = !kIsWeb && account != null;
+    final isAuthorizedForWeb = kIsWeb && account != null && await googleSignIn.canAccessScopes(googleSignIn.scopes);
+    if (!isAuthorizedForMobile && !isAuthorizedForWeb) {
+      throw Exception('User is not authorized!');
     }
+
+    final GoogleSignInAuthentication googleAuth = await account.authentication;
+    _authenticationTokens = AuthenticationTokens(accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
+
+    // set auth headers for the drive api
+    final Map<String, String> authHeaders = await account.authHeaders;
+    _authenticateClient = _GoogleAuthClient(authHeaders);
+
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
 
   Future<GoogleSignInAccount?> _getGoogleUser(GoogleSignIn googleSignIn) async {
     try {
-      if (kIsWeb) {
+      if (kIsWeb && !isSignedIn) {
         return await googleSignIn.signIn();
       }
       return (await googleSignIn.signInSilently(suppressErrors: false)) ??
           (interactiveLogin ? await googleSignIn.signIn() : null);
     } catch (e) {
-      if (!interactiveLogin) {
-        return googleSignIn.signIn();
-      }
+      log.e(e);
     }
     return null;
   }
