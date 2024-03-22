@@ -158,6 +158,23 @@ class GoogleDriveService
   // FILES
 
   @override
+  Future<bool> doesFileExist(
+      {required GoogleDriveFile file, bool ignoreTrashedFiles = true}) async {
+    if (_driveApi == null) {
+      return false;
+    }
+
+    try {
+      final v3.File? cloudFile =
+          await _driveApi!.files.get(file.file.id!) as v3.File?;
+      return cloudFile != null &&
+          (!ignoreTrashedFiles || !(cloudFile.trashed == true));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
   Future<bool> deleteFile({required GoogleDriveFile file}) async {
     if (_driveApi == null) {
       return false;
@@ -276,44 +293,49 @@ class GoogleDriveService
   }
 
   @override
-  Future<List<GoogleDriveFile>> getAllFiles({GoogleDriveFolder? folder}) async {
+  Future<List<GoogleDriveFile>> getAllFiles(
+      {GoogleDriveFolder? folder, bool ignoreTrashedFiles = true}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all files.');
     }
 
+    final List<GoogleDriveFile> result = [];
+
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
-    final v3.FileList res;
-    if (folder == null) {
-      res = await _driveApi!.files.list(
-        $fields: 'files/*',
-        q: 'trashed=false',
-      );
-    } else {
-      res = await _driveApi!.files.list(
-        $fields: 'files/*',
-        q: "'${folder.folder.id}' in parents and trashed=false",
-      );
-    }
-    if (res.nextPageToken != null) {
-      // TODO complete the files list
-    }
+    v3.FileList? res;
+    do {
+      // Complete the files list, otherwise maximum 100 files are returned
+      if (folder == null) {
+        res = await _driveApi!.files.list(
+          $fields: 'files/*',
+          q: 'trashed=${!ignoreTrashedFiles}',
+        );
+      } else {
+        res = await _driveApi!.files.list(
+          $fields: 'files/*',
+          q: "'${folder.folder.id}' in parents and trashed=${!ignoreTrashedFiles}",
+        );
+      }
+
+      for (final v3.File file in res.files!) {
+        final driveFile = GoogleDriveFile(
+          fileId: file.id,
+          fileName: file.name!,
+          parents: file.parents,
+          description: file.description,
+          mimeType: file.mimeType,
+          trashed: (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
+          bytes: null,
+        );
+        result.add(driveFile);
+      }
+    } while (res.nextPageToken != null);
+
     if (res.files == null) {
       throw Exception('Unable to list all files!');
     }
-    return res.files!
-        .map(
-          (file) => GoogleDriveFile(
-            fileId: file.id,
-            fileName: file.name!,
-            parents: file.parents,
-            description: file.description,
-            mimeType: file.mimeType,
-            trashed:
-                (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
-            bytes: null,
-          ),
-        )
-        .toList();
+
+    return result;
   }
 
   // FOLDERS

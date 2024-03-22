@@ -12,6 +12,8 @@ enum StorageType {
   // add your cloud provider enum here, e.g. Dropbox
 
   const StorageType({required this.name, required this.supportedPlatforms});
+
   final String name;
+
   final Set<PlatformSupportEnum> supportedPlatforms;
 }

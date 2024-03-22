@@ -11,7 +11,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     drive.Media? media,
     this.fileContent,
     this.mimeType,
-    this.trashed,
+    this.trashed = false,
   })  : _media = media,
         super();
 
@@ -35,7 +35,8 @@ class GoogleDriveFile implements CloudFile<drive.File> {
   /// Optional value. Some text that is stored in the metadata of the file.
   final String? description;
 
-  final bool? trashed;
+  @override
+  final bool trashed;
 
   @override
   drive.File get file {

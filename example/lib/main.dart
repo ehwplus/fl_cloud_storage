@@ -41,33 +41,36 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final storageTypeOptions = StorageType.values
+        .map<DropdownMenuItem<StorageType>>(
+          (StorageType storageType) => DropdownMenuItem(
+            key: Key(storageType.name),
+            value: storageType,
+            child: Text(storageType.name),
+          ),
+        )
+        .toList();
     return Scaffold(
         appBar: AppBar(
-          title: Text(widget.title),
+          title: Text('${widget.title} - Login'),
         ),
         body: Column(
           children: [
             const SizedBox(height: 50),
             const Center(
-              child: Text('fl_cloud_storage'),
+              child: Text('1. Select your vendor'),
             ),
-            const SizedBox(height: 25),
             DropdownButton<StorageType>(
               value: selection,
-              items: StorageType.values
-                  .map<DropdownMenuItem<StorageType>>(
-                    (StorageType e) => DropdownMenuItem(
-                      key: Key(e.name),
-                      value: e,
-                      child: Text(e.name),
-                    ),
-                  )
-                  .toList(),
+              items: storageTypeOptions,
               onChanged: (StorageType? value) {
                 setState(() {
                   selection = value;
                 });
               },
+            ),
+            const Center(
+              child: Text('2. Select the scope'),
             ),
             if (selection == StorageType.GOOGLE_DRIVE)
               DropdownButton<GoogleDriveScope>(

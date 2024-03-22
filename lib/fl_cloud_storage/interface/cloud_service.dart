@@ -35,8 +35,13 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>,
 
   // FILES
 
+  /// Check if file exists in cloud.
+  Future<bool> doesFileExist(
+      {required FILE file, bool ignoreTrashedFiles = true});
+
   /// List all files or those of a folder if not null
-  Future<List<FILE>> getAllFiles({FOLDER? folder});
+  Future<List<FILE>> getAllFiles(
+      {FOLDER? folder, bool ignoreTrashedFiles = true});
 
   /// Create or update a file
   /// This method is meant to be idempotent but must not lead to data loss when

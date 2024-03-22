@@ -1,6 +1,12 @@
+## 0.0.16
+
+* Improvement: There should be a simple function to check if a file exists in the cloud.
+* Fix: Function getAllFiles for Google Drive should return more than 100 files
+* Refactor: Update libraries google_sign_in and googleapis
+
 ## 0.0.15
 
-* Login at web should work
+* Fix: Login at web should work
 
 ## 0.0.13
 

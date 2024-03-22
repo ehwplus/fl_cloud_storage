@@ -18,4 +18,7 @@ abstract class CloudFile<FILE> {
   /// Unique id of this file. Can be null if the file is not uploaded yet.
   /// Be aware, that a file without [fileId] cannot be used to download it from cloud.
   String? get fileId;
+
+  /// Returns true, if this file was trashed and is inside the cloud bin.
+  bool get trashed;
 }

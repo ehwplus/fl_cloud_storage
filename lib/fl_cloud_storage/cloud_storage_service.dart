@@ -8,7 +8,7 @@ import 'package:logger/logger.dart';
 /// Root logger.
 final Logger log = Logger(
   printer: MyPrinter('FL_CLOUD_STORAGE'),
-  level: Level.verbose,
+  level: Level.info,
 );
 
 /// This class is the entrypoint for the fl_cloud_storage package. It is a
@@ -76,6 +76,14 @@ class CloudStorageService {
   /// Invokes the [authorize] method of the delegate instance.
   FutureOr<bool> authorize() => _delegate.authorize();
 
+  Future<bool> doesFileExist({
+    required CloudFile<dynamic> file,
+    bool ignoreTrashedFiles = true,
+  }) async {
+    return _delegate.doesFileExist(
+        file: file, ignoreTrashedFiles: ignoreTrashedFiles);
+  }
+
   /// Invokes the [deleteFile] method of the delegate instance.
   FutureOr<bool> deleteFile({
     required CloudFile<dynamic> file,
@@ -141,9 +149,13 @@ class CloudStorageService {
   /// Invokes the [getAllFiles] method of the delegate instance.
   FutureOr<List<CloudFile<dynamic>>> getAllFiles({
     CloudFolder<dynamic>? folder,
+    bool ignoreTrashedFiles = true,
   }) {
     try {
-      return _delegate.getAllFiles(folder: folder);
+      return _delegate.getAllFiles(
+        folder: folder,
+        ignoreTrashedFiles: ignoreTrashedFiles,
+      );
     } catch (ex) {
       log.e(ex);
     }
