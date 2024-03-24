@@ -45,7 +45,6 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       ..name = fileName
       ..description = description
       ..mimeType = mimeType
-      ..trashed = trashed
       ..parents = parents;
   }
 

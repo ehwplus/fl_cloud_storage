@@ -1,6 +1,6 @@
 name: fl_cloud_storage
 description: Store files in the cloud from Flutter apps. In the first step we only support Google Drive but adding other clouds is much appreciated.
-version: 0.0.16
+version: 0.1.0
 homepage: https://github.com/ehwplus/fl_cloud_storage
 
 environment:
@@ -12,9 +12,9 @@ dependencies:
     sdk: flutter
   google_sign_in: '>=5.4.3 <=6.2.1'
   googleapis: '>=9.2.0 <=13.1.0'
-  http: '>=0.11.3 <=1.0.0'
+  http: '>=0.11.3 <=1.1.0'
   json_annotation: '>=4.7.0 <=4.8.1'
-  logger: '>=1.1.0 <=2.1.0'
+  logger: '>=1.1.0 <=2.2.0'
 
 dev_dependencies:
   build_runner: '>=2.0.4'

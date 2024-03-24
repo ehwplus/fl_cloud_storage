@@ -1,3 +1,7 @@
+## 0.1.0
+
+* Fix: Upload a new file on Google Drive
+
 ## 0.0.16
 
 * Improvement: There should be a simple function to check if a file exists in the cloud.
