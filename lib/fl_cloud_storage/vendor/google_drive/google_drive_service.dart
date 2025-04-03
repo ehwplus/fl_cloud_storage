@@ -144,7 +144,7 @@ class GoogleDriveService
   @override
   Future<bool> logout() async {
     final googleSignIn = GoogleSignIn();
-    await googleSignIn.signOut();
+    await googleSignIn.disconnect();
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
 
