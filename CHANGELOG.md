@@ -1,3 +1,7 @@
+## 0.1.1
+
+* Fix: Logout should delete remembered user inside cache
+
 ## 0.1.0
 
 * Fix: Upload a new file on Google Drive
