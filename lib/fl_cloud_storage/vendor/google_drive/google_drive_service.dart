@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart'
     show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
 import 'package:googleapis/drive/v3.dart' as v3;
@@ -144,7 +145,11 @@ class GoogleDriveService
   @override
   Future<bool> logout() async {
     final googleSignIn = GoogleSignIn();
-    await googleSignIn.disconnect();
+    try {
+      await googleSignIn.disconnect();
+    } on PlatformException catch (_) {
+      await googleSignIn.signOut();
+    }
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
 
