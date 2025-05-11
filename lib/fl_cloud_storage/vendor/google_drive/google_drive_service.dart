@@ -4,22 +4,14 @@ import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart'
-    show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
+import 'package:google_sign_in/google_sign_in.dart' show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
-const googleDriveSingleUserScope = [
-  v3.DriveApi.driveAppdataScope,
-  v3.DriveApi.driveFileScope
-];
+const googleDriveSingleUserScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope];
 
 /// Scope for sharing json with other Google users
-const googleDriveFullScope = [
-  v3.DriveApi.driveAppdataScope,
-  v3.DriveApi.driveFileScope,
-  v3.DriveApi.driveScope
-];
+const googleDriveFullScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope];
 
 class _GoogleAuthClient extends http.BaseClient {
   _GoogleAuthClient(this._headers);
@@ -33,8 +25,7 @@ class _GoogleAuthClient extends http.BaseClient {
   }
 }
 
-class GoogleDriveService
-    implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
+class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
   /// This class cannot be instantiated synchronously.
   /// Use `await GoogleDriveService.initialize()`.
   GoogleDriveService._(this.driveScope);
@@ -52,6 +43,10 @@ class GoogleDriveService
 
   bool _isSignedIn = false;
 
+  String? _email;
+  String? _displayName;
+  String? _photoUrl;
+
   final GoogleDriveScope driveScope;
 
   AuthenticationTokens? _authenticationTokens;
@@ -61,6 +56,15 @@ class GoogleDriveService
 
   @override
   bool get isSignedIn => _isSignedIn;
+
+  @override
+  String? get email => _email;
+
+  @override
+  String? get displayName => _displayName;
+
+  @override
+  String? get photoUrl => _photoUrl;
 
   /// Google drive service is supported on all platforms.
   ///
@@ -95,9 +99,7 @@ class GoogleDriveService
   @override
   Future<bool> authenticate() async {
     final googleSignIn = GoogleSignIn(
-      scopes: driveScope == GoogleDriveScope.appData
-          ? googleDriveSingleUserScope
-          : googleDriveFullScope,
+      scopes: driveScope == GoogleDriveScope.appData ? googleDriveSingleUserScope : googleDriveFullScope,
     );
 
     // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
@@ -108,16 +110,16 @@ class GoogleDriveService
     final GoogleSignInAccount? account = await _getGoogleUser(googleSignIn);
 
     final isAuthorizedForMobile = !kIsWeb && account != null;
-    final isAuthorizedForWeb = kIsWeb &&
-        account != null &&
-        await googleSignIn.canAccessScopes(googleSignIn.scopes);
+    final isAuthorizedForWeb = kIsWeb && account != null && await googleSignIn.canAccessScopes(googleSignIn.scopes);
     if (!isAuthorizedForMobile && !isAuthorizedForWeb) {
       throw Exception('User is not authorized!');
     }
 
     final GoogleSignInAuthentication googleAuth = await account.authentication;
-    _authenticationTokens = AuthenticationTokens(
-        accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
+    _authenticationTokens = AuthenticationTokens(accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
+    _email = account.email;
+    _displayName = account.displayName;
+    _photoUrl = account.photoUrl;
 
     // set auth headers for the drive api
     final Map<String, String> authHeaders = await account.authHeaders;
@@ -150,6 +152,10 @@ class GoogleDriveService
     } on PlatformException catch (_) {
       await googleSignIn.signOut();
     }
+    _email = null;
+    _displayName = null;
+    _photoUrl = null;
+
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
 
@@ -163,17 +169,14 @@ class GoogleDriveService
   // FILES
 
   @override
-  Future<bool> doesFileExist(
-      {required GoogleDriveFile file, bool ignoreTrashedFiles = true}) async {
+  Future<bool> doesFileExist({required GoogleDriveFile file, bool ignoreTrashedFiles = true}) async {
     if (_driveApi == null) {
       return false;
     }
 
     try {
-      final v3.File? cloudFile =
-          await _driveApi!.files.get(file.file.id!) as v3.File?;
-      return cloudFile != null &&
-          (!ignoreTrashedFiles || !(cloudFile.trashed == true));
+      final v3.File? cloudFile = await _driveApi!.files.get(file.file.id!) as v3.File?;
+      return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
     } catch (e) {
       return false;
     }
@@ -186,8 +189,7 @@ class GoogleDriveService
     }
 
     if (file.file.id == null) {
-      throw Exception(
-          'Must provide a file id of the file which shall be downloaded!');
+      throw Exception('Must provide a file id of the file which shall be downloaded!');
     }
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
@@ -205,14 +207,12 @@ class GoogleDriveService
     void Function(Uint8List bytes)? onBytesDownloaded,
   }) async {
     if (_driveApi == null) {
-      throw Exception(
-          'DriveApi is null, unable to download file ${file.fileName}.');
+      throw Exception('DriveApi is null, unable to download file ${file.fileName}.');
     }
 
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     if (file.file.id == null) {
-      throw Exception(
-          'Must provide a file id of the file which shall be downloaded!');
+      throw Exception('Must provide a file id of the file which shall be downloaded!');
     }
 
     final v3.Media media = await _driveApi!.files.get(
@@ -249,8 +249,7 @@ class GoogleDriveService
         }, onDone: () async {
           onBytesDownloaded?.call(Uint8List.fromList(bytes));
         }, onError: (dynamic error) {
-          debugPrint(
-              '[sync] Unable to store downloaded photo ${file.fileName}: $error');
+          debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
         });
         return media;
       } catch (e) {
@@ -280,16 +279,14 @@ class GoogleDriveService
       final v3.File driveFile = v3.File()
         ..description = file.description
         ..name = file.fileName;
-      final updatedFile = await _driveApi!.files
-          .update(driveFile, file.fileId!, uploadMedia: file.media);
+      final updatedFile = await _driveApi!.files.update(driveFile, file.fileId!, uploadMedia: file.media);
       return file.copyWith(
         fileId: updatedFile.id,
         fileName: updatedFile.name,
         parents: updatedFile.parents,
       );
     }
-    final cratedFile =
-        await _driveApi!.files.create(file.file, uploadMedia: file.media);
+    final cratedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
     return file.copyWith(
       fileId: cratedFile.id,
       fileName: cratedFile.name,
@@ -298,8 +295,7 @@ class GoogleDriveService
   }
 
   @override
-  Future<List<GoogleDriveFile>> getAllFiles(
-      {GoogleDriveFolder? folder, bool ignoreTrashedFiles = true}) async {
+  Future<List<GoogleDriveFile>> getAllFiles({GoogleDriveFolder? folder, bool ignoreTrashedFiles = true}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all files.');
     }
@@ -396,8 +392,7 @@ class GoogleDriveService
   }
 
   @override
-  Future<List<GoogleDriveFolder>> getAllFolders(
-      {GoogleDriveFolder? folder}) async {
+  Future<List<GoogleDriveFolder>> getAllFolders({GoogleDriveFolder? folder}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all folders.');
     }
@@ -405,8 +400,7 @@ class GoogleDriveService
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
-      res = await _driveApi!.files.list(
-          q: "mimeType = 'application/vnd.google-apps.folder' and trashed=false");
+      res = await _driveApi!.files.list(q: "mimeType = 'application/vnd.google-apps.folder' and trashed=false");
     } else {
       res = await _driveApi!.files.list(
         q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents and trashed=false",
@@ -418,9 +412,7 @@ class GoogleDriveService
     if (res.files == null) {
       throw Exception('Unable to list all files!');
     }
-    return res.files!
-        .map((folder) => GoogleDriveFolder(folder: folder))
-        .toList();
+    return res.files!.map((folder) => GoogleDriveFolder(folder: folder)).toList();
   }
 
   @override
@@ -433,11 +425,8 @@ class GoogleDriveService
       q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
     );
     if (res.files != null && res.files!.length > 1) {
-      debugPrint(
-          '[GoogleDriveService] Found more than one folder with name "$name": ${res.files!.map((e) => e.id)}');
+      debugPrint('[GoogleDriveService] Found more than one folder with name "$name": ${res.files!.map((e) => e.id)}');
     }
-    return res.files?.isNotEmpty == true
-        ? GoogleDriveFolder(folder: res.files![0])
-        : null;
+    return res.files?.isNotEmpty == true ? GoogleDriveFolder(folder: res.files![0]) : null;
   }
 }

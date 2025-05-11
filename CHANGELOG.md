@@ -1,3 +1,8 @@
+## 0.1.3
+
+* Feature: Expose email, displayName and photoUrl (if given)
+
+
 ## 0.1.2
 
 * Fix: Logout should delete remembered user inside cache
