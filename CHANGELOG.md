@@ -1,7 +1,6 @@
-## 0.1.3
+## 0.1.4
 
 * Feature: Expose email, displayName and photoUrl (if given)
-
 
 ## 0.1.2
 

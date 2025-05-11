@@ -49,9 +49,17 @@ class CloudStorageService {
   /// Whether the client is signed in or not.
   bool get isSignedIn => _delegate.isSignedIn;
 
+  /// Email used for cloud service if given
+  String? get email => _delegate.email;
+
+  /// Photo url of user if given
+  String? get photoUrl => _delegate.photoUrl;
+
+  /// Name of user to display if given
+  String? get displayName => _delegate.displayName;
+
   /// Expose the tokens
-  AuthenticationTokens? get authenticationTokens =>
-      _delegate.authenticationTokens;
+  AuthenticationTokens? get authenticationTokens => _delegate.authenticationTokens;
 
   /// Invokes the [authenticate] method of the delegate instance.
   FutureOr<bool> authenticate() {
@@ -80,8 +88,7 @@ class CloudStorageService {
     required CloudFile<dynamic> file,
     bool ignoreTrashedFiles = true,
   }) async {
-    return _delegate.doesFileExist(
-        file: file, ignoreTrashedFiles: ignoreTrashedFiles);
+    return _delegate.doesFileExist(file: file, ignoreTrashedFiles: ignoreTrashedFiles);
   }
 
   /// Invokes the [deleteFile] method of the delegate instance.
@@ -126,8 +133,7 @@ class CloudStorageService {
     void Function(Uint8List bytes)? onBytesDownloaded,
   }) async {
     try {
-      return _delegate.downloadFile(
-          file: file, onBytesDownloaded: onBytesDownloaded);
+      return _delegate.downloadFile(file: file, onBytesDownloaded: onBytesDownloaded);
     } catch (ex) {
       log.e(ex);
     }
