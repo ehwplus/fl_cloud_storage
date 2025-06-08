@@ -169,9 +169,12 @@ class CloudStorageService {
   }
 
   /// Invokes the [getFolderByName] method of the delegate instance.
-  FutureOr<CloudFolder<dynamic>?> getFolderByName(String name) {
+  FutureOr<CloudFolder<dynamic>?> getFolderByName(
+    String name, {
+    bool ignoreTrashedFiles = true,
+  }) {
     try {
-      return _delegate.getFolderByName(name);
+      return _delegate.getFolderByName(name, ignoreTrashedFiles: ignoreTrashedFiles);
     } catch (ex) {
       log.e(ex);
     }
@@ -181,9 +184,10 @@ class CloudStorageService {
   /// Invokes the [getAllFolders] method of the delegate instance.
   FutureOr<List<CloudFolder<dynamic>>> getAllFolders({
     CloudFolder<dynamic>? folder,
+    bool ignoreTrashedFiles = true,
   }) {
     try {
-      return _delegate.getAllFolders(folder: folder);
+      return _delegate.getAllFolders(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles);
     } catch (ex) {
       log.e(ex);
     }

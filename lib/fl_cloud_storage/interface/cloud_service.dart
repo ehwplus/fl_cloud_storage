@@ -67,10 +67,10 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>, FOLDER extends Clo
   /// List all folders in the storage vendor.
   /// If optionally a folder is passed as parameter, then all folders in that
   /// folder will be returned.
-  Future<List<FOLDER>> getAllFolders({FOLDER? folder});
+  Future<List<FOLDER>> getAllFolders({FOLDER? folder, bool ignoreTrashedFiles = true});
 
   /// Get a [CloudFolder] by name.
-  Future<FOLDER?> getFolderByName(String name);
+  Future<FOLDER?> getFolderByName(String name, {bool ignoreTrashedFiles = true});
 
   /// Create or update a folder
   /// This method is meant to be idempotent.

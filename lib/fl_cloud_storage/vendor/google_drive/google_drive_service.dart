@@ -392,7 +392,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   @override
-  Future<List<GoogleDriveFolder>> getAllFolders({GoogleDriveFolder? folder}) async {
+  Future<List<GoogleDriveFolder>> getAllFolders({GoogleDriveFolder? folder, bool ignoreTrashedFiles = true}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all folders.');
     }
@@ -400,10 +400,11 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     final v3.FileList res;
     if (folder == null) {
-      res = await _driveApi!.files.list(q: "mimeType = 'application/vnd.google-apps.folder' and trashed=false");
+      res = await _driveApi!.files
+          .list(q: "mimeType = 'application/vnd.google-apps.folder' and trashed=${!ignoreTrashedFiles}");
     } else {
       res = await _driveApi!.files.list(
-        q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents and trashed=false",
+        q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents and trashed=${!ignoreTrashedFiles}",
       );
     }
     if (res.nextPageToken != null) {
@@ -416,13 +417,13 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   @override
-  Future<GoogleDriveFolder?> getFolderByName(String name) async {
+  Future<GoogleDriveFolder?> getFolderByName(String name, {bool ignoreTrashedFiles = true}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get folder $name.');
     }
 
     final v3.FileList res = await _driveApi!.files.list(
-      q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name'",
+      q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name' and trashed=${!ignoreTrashedFiles}",
     );
     if (res.files != null && res.files!.length > 1) {
       debugPrint('[GoogleDriveService] Found more than one folder with name "$name": ${res.files!.map((e) => e.id)}');

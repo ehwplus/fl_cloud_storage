@@ -1,3 +1,7 @@
+## 0.1.5
+
+* getFolderByName should not return trashed folders by default
+
 ## 0.1.4
 
 * Feature: Expose email, displayName and photoUrl (if given)
