@@ -168,17 +168,17 @@ class CloudStorageService {
     return [];
   }
 
-  /// Invokes the [getFolderByName] method of the delegate instance.
-  FutureOr<CloudFolder<dynamic>?> getFolderByName(
+  /// Invokes the [getFoldersByName] method of the delegate instance.
+  FutureOr<List<CloudFolder<dynamic>?>> getFoldersByName(
     String name, {
     bool ignoreTrashedFiles = true,
   }) {
     try {
-      return _delegate.getFolderByName(name, ignoreTrashedFiles: ignoreTrashedFiles);
+      return _delegate.getFoldersByName(name, ignoreTrashedFiles: ignoreTrashedFiles);
     } catch (ex) {
       log.e(ex);
     }
-    return null;
+    return [];
   }
 
   /// Invokes the [getAllFolders] method of the delegate instance.

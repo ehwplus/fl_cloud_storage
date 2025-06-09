@@ -1,3 +1,7 @@
+## 0.2.0
+
+* getFolderByName refactored into getFoldersByName
+
 ## 0.1.5
 
 * getFolderByName should not return trashed folders by default

@@ -70,7 +70,7 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>, FOLDER extends Clo
   Future<List<FOLDER>> getAllFolders({FOLDER? folder, bool ignoreTrashedFiles = true});
 
   /// Get a [CloudFolder] by name.
-  Future<FOLDER?> getFolderByName(String name, {bool ignoreTrashedFiles = true});
+  Future<List<FOLDER>> getFoldersByName(String name, {bool ignoreTrashedFiles = true});
 
   /// Create or update a folder
   /// This method is meant to be idempotent.
