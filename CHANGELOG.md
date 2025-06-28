@@ -1,3 +1,7 @@
+## 0.3.1
+
+* Return TooManyRequestsError instead of DetailedApiRequestError
+
 ## 0.3.0
 
 * Use latest libraries of google_sign_in and googleapis for new Google sign-in
