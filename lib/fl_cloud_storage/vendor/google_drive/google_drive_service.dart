@@ -180,6 +180,11 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = await authenticate();
+        if (authenticated) {
+          final v3.File? cloudFile = await _driveApi!.files.get(file.file.id!) as v3.File?;
+          return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to make lookup for Google Drive file');
@@ -204,6 +209,11 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return true;
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = await authenticate();
+        if (authenticated) {
+          await _driveApi!.files.delete(file.file.id!);
+          return true;
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to delete Google Drive file');
@@ -216,6 +226,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   Future<GoogleDriveFile> downloadFile({
     required GoogleDriveFile file,
     void Function(Uint8List bytes)? onBytesDownloaded,
+    bool retry = false,
   }) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to download file ${file.fileName}.');
@@ -272,6 +283,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return Future.value(file.copyWith(media: await getMedia(media)));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = !retry && await authenticate();
+        if (authenticated) {
+          return downloadFile(file: file, onBytesDownloaded: onBytesDownloaded, retry: true);
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to download Google Drive file');
@@ -283,6 +298,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     required GoogleDriveFile file,
     GoogleDriveFolder? parent,
     bool overwrite = true,
+    bool retry = false,
   }) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to upload file.');
@@ -313,6 +329,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       );
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = !retry && await authenticate();
+        if (authenticated) {
+          return uploadFile(file: file, parent: parent, overwrite: overwrite, retry: true);
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to upload Google Drive file');
@@ -320,7 +340,11 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   @override
-  Future<List<GoogleDriveFile>> getAllFiles({GoogleDriveFolder? folder, bool ignoreTrashedFiles = true}) async {
+  Future<List<GoogleDriveFile>> getAllFiles({
+    GoogleDriveFolder? folder,
+    bool ignoreTrashedFiles = true,
+    bool retry = false,
+  }) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all files.');
     }
@@ -363,6 +387,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       }
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = !retry && await authenticate();
+        if (authenticated) {
+          return getAllFiles(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
+        }
         throw TooManyRequestsError();
       }
     }
@@ -380,6 +408,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   Future<GoogleDriveFolder> uploadFolder({
     required String name,
     GoogleDriveFolder? parent,
+    bool retry = false,
   }) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to upload folder $name.');
@@ -395,6 +424,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return GoogleDriveFolder(folder: await _driveApi!.files.create(folder));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = !retry && await authenticate();
+        if (authenticated) {
+          return uploadFolder(name: name, parent: parent, retry: true);
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to upload Google Drive folder');
@@ -404,7 +437,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   @override
   Future<bool> deleteFolder({
     required GoogleDriveFolder folder,
-  }) {
+  }) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to delete folder.');
     }
@@ -418,10 +451,15 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
     try {
-      _driveApi!.files.delete(folder.folder.id!);
+      await _driveApi!.files.delete(folder.folder.id!);
       return Future.value(true);
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = await authenticate();
+        if (authenticated) {
+          await _driveApi!.files.delete(folder.folder.id!);
+          return Future.value(true);
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to delete Google Drive folder');
@@ -439,7 +477,11 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   @override
-  Future<List<GoogleDriveFolder>> getAllFolders({GoogleDriveFolder? folder, bool ignoreTrashedFiles = true}) async {
+  Future<List<GoogleDriveFolder>> getAllFolders({
+    GoogleDriveFolder? folder,
+    bool ignoreTrashedFiles = true,
+    bool retry = false,
+  }) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get all folders.');
     }
@@ -464,6 +506,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return res.files!.map((folder) => GoogleDriveFolder(folder: folder)).toList();
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = !retry && await authenticate();
+        if (authenticated) {
+          return getAllFolders(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to get all Google Drive folders');
@@ -471,7 +517,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   @override
-  Future<List<GoogleDriveFolder>> getFoldersByName(String name, {bool ignoreTrashedFiles = true}) async {
+  Future<List<GoogleDriveFolder>> getFoldersByName(String name,
+      {bool ignoreTrashedFiles = true, bool retry = false}) async {
     if (_driveApi == null) {
       throw Exception('DriveApi is null, unable to get folder $name.');
     }
@@ -483,6 +530,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return res.files?.map((element) => GoogleDriveFolder(folder: element)).toList(growable: false) ?? [];
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
+        final bool authenticated = !retry && await authenticate();
+        if (authenticated) {
+          return getFoldersByName(name, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
+        }
         throw TooManyRequestsError();
       }
       throw Exception('Unable to get Google Drive folders with name $name');

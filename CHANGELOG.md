@@ -1,3 +1,7 @@
+## 0.3.2
+
+* Try to authenticate again instead of returning always a TooManyRequestsError
+
 ## 0.3.1
 
 * Return TooManyRequestsError instead of DetailedApiRequestError
