@@ -1,3 +1,7 @@
+## 0.3.3
+
+* Fix: Authentication should renew the driveApi as well
+
 ## 0.3.2
 
 * Try to authenticate again instead of returning always a TooManyRequestsError

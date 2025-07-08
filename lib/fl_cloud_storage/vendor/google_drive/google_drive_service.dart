@@ -125,6 +125,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     // set auth headers for the drive api
     final Map<String, String> authHeaders = await account.authHeaders;
     _authenticateClient = _GoogleAuthClient(authHeaders);
+    _driveApi = v3.DriveApi(_authenticateClient);
 
     return _isSignedIn = await googleSignIn.isSignedIn();
   }
