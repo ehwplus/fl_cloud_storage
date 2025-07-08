@@ -1,28 +1,41 @@
 import 'dart:convert';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
-import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/too_many_requests_error.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart' show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
+import 'package:google_sign_in/google_sign_in.dart'
+    show
+        GoogleSignIn,
+        GoogleSignInAccount,
+        GoogleSignInAuthentication,
+        GoogleSignInClientAuthorization,
+        GoogleSignInException;
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
-const googleDriveSingleUserScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope];
+const _googleDriveSingleUserScope = [
+  'https://www.googleapis.com/auth/contacts.readonly',
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope,
+];
 
 /// Scope for sharing json with other Google users
-const googleDriveFullScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope];
+const _googleDriveFullScope = [
+  'https://www.googleapis.com/auth/contacts.readonly',
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope,
+  v3.DriveApi.driveScope,
+];
 
 class _GoogleAuthClient extends http.BaseClient {
-  _GoogleAuthClient(this._headers);
+  _GoogleAuthClient(this.accessToken);
 
-  final Map<String, String> _headers;
+  final String accessToken;
   final http.Client _client = http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    return _client.send(request..headers.addAll(_headers));
+    return _client.send(request..headers.addAll({'Authorization': 'Bearer $accessToken'}));
   }
 }
 
@@ -30,6 +43,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   /// This class cannot be instantiated synchronously.
   /// Use `await GoogleDriveService.initialize()`.
   GoogleDriveService._(this.driveScope);
+
+  /// Google drive service is supported on all platforms.
+  ///
+  static List<PlatformSupportEnum> get supportedPlatforms => [];
 
   /// Whether to do the google login silently or interactively.
   /// A previously authenticated google user can be logged in silently.
@@ -40,9 +57,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   /// service.
   v3.DriveApi? _driveApi;
 
-  late _GoogleAuthClient _authenticateClient;
-
-  bool _isSignedIn = false;
+  bool _isAuthenticated = false;
+  bool _isAuthorized = false;
 
   String? _email;
   String? _displayName;
@@ -56,7 +72,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   AuthenticationTokens? get authenticationTokens => _authenticationTokens;
 
   @override
-  bool get isSignedIn => _isSignedIn;
+  bool get isSignedIn => _isAuthenticated;
 
   @override
   String? get email => _email;
@@ -67,24 +83,22 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   @override
   String? get photoUrl => _photoUrl;
 
-  /// Google drive service is supported on all platforms.
-  ///
-  static List<PlatformSupportEnum> get supportedPlatforms => [];
-
   static Future<GoogleDriveService> initialize({
     GoogleDriveScope? driveScope,
   }) async {
     final instance = GoogleDriveService._(
       driveScope ?? GoogleDriveScope.appData,
     );
-    await instance.initializeApi();
+    await instance.authenticate();
+    await instance._initializeApi();
     return instance;
   }
 
-  Future<void> initializeApi() async {
-    final isAuthenticated = await authenticate();
-    if (isAuthenticated) {
-      _driveApi = v3.DriveApi(_authenticateClient);
+  Future<void> _initializeApi() async {
+    final accessToken = _authenticationTokens?.accessToken;
+    if (_isAuthenticated && _isAuthorized && accessToken != null) {
+      final http.Client client = _GoogleAuthClient(accessToken);
+      _driveApi = v3.DriveApi(client);
     }
     if (_driveApi == null) {
       throw Exception('Failed to initialize Google drive API!');
@@ -93,71 +107,70 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
 
   // AUTH
 
+  static const String? _clientId = null;
+  static const String? _serverClientId = null;
+
+  Future<bool> authenticateAgain() async {
+    final result = await authenticate();
+    await _initializeApi();
+    return result;
+  }
+
   /// This method does a google login with scopes for google drive.
   ///
   /// The authentication headers of the google user are used to initialize the
   /// Google drive API later on.
   @override
   Future<bool> authenticate() async {
-    final googleSignIn = GoogleSignIn(
-      scopes: driveScope == GoogleDriveScope.appData ? googleDriveSingleUserScope : googleDriveFullScope,
-    );
+    // #docregion Setup
+    final GoogleSignIn signIn = GoogleSignIn.instance;
+    await signIn.initialize(clientId: _clientId, serverClientId: _serverClientId);
 
-    // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
-    //
-    // It is recommended by Google Identity Services to render both the One Tap UX
-    // and the Google Sign In button together to "reduce friction and improve
-    // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
-    final GoogleSignInAccount? account = await _getGoogleUser(googleSignIn);
+    //signIn.authenticationEvents.listen(_handleAuthenticationEvent).onError(_handleAuthenticationError);
 
-    final isAuthorizedForMobile = !kIsWeb && account != null;
-    final isAuthorizedForWeb = kIsWeb && account != null && await googleSignIn.canAccessScopes(googleSignIn.scopes);
-    if (!isAuthorizedForMobile && !isAuthorizedForWeb) {
-      throw Exception('User is not authorized!');
+    final GoogleSignInAccount? account = await signIn.attemptLightweightAuthentication();
+    final GoogleSignInAuthentication? authentication = account?.authentication;
+    final idToken = authentication?.idToken;
+    if (account == null || idToken == null) {
+      _isAuthenticated = false;
+      return false;
     }
+    _isAuthenticated = true;
 
-    final GoogleSignInAuthentication googleAuth = await account.authentication;
-    _authenticationTokens = AuthenticationTokens(accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
-    _email = account.email;
-    _displayName = account.displayName;
-    _photoUrl = account.photoUrl;
-
-    // set auth headers for the drive api
-    final Map<String, String> authHeaders = await account.authHeaders;
-    _authenticateClient = _GoogleAuthClient(authHeaders);
-
-    return _isSignedIn = await googleSignIn.isSignedIn();
-  }
-
-  Future<GoogleSignInAccount?> _getGoogleUser(GoogleSignIn googleSignIn) async {
+    // authorize
     try {
-      if (kIsWeb && !isSignedIn) {
-        return await googleSignIn.signIn();
-      }
-      return (await googleSignIn.signInSilently(suppressErrors: false)) ??
-          (interactiveLogin ? await googleSignIn.signIn() : null);
-    } catch (e) {
-      if (!interactiveLogin) {
-        return googleSignIn.signIn();
-      }
-      log.e(e);
+      final GoogleSignInClientAuthorization authorization = await account.authorizationClient.authorizeScopes(
+        driveScope == GoogleDriveScope.full ? _googleDriveFullScope : _googleDriveSingleUserScope,
+      );
+      final accessToken = authorization.accessToken;
+      _isAuthorized = true;
+
+      _authenticationTokens = AuthenticationTokens(idToken: idToken, accessToken: accessToken);
+      _email = account.email;
+      _displayName = account.displayName;
+      _photoUrl = account.photoUrl;
+
+      return true;
+    } on GoogleSignInException catch (e) {
+      debugPrint(e.toString());
+      _isAuthorized = false;
+      return false;
     }
-    return null;
   }
 
   @override
   Future<bool> logout() async {
-    final googleSignIn = GoogleSignIn();
+    final googleSignIn = GoogleSignIn.instance;
     try {
-      await googleSignIn.disconnect();
-    } on PlatformException catch (_) {
       await googleSignIn.signOut();
+    } on PlatformException catch (_) {
+      await googleSignIn.disconnect();
     }
     _email = null;
     _displayName = null;
     _photoUrl = null;
 
-    return _isSignedIn = await googleSignIn.isSignedIn();
+    return _isAuthenticated = false;
   }
 
   @override
@@ -180,7 +193,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = await authenticate();
+        final bool authenticated = await authenticateAgain();
         if (authenticated) {
           final v3.File? cloudFile = await _driveApi!.files.get(file.file.id!) as v3.File?;
           return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
@@ -283,7 +296,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return Future.value(file.copyWith(media: await getMedia(media)));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = !retry && await authenticate();
+        final bool authenticated = !retry && await authenticateAgain();
         if (authenticated) {
           return downloadFile(file: file, onBytesDownloaded: onBytesDownloaded, retry: true);
         }
@@ -329,7 +342,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       );
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = !retry && await authenticate();
+        final bool authenticated = !retry && await authenticateAgain();
         if (authenticated) {
           return uploadFile(file: file, parent: parent, overwrite: overwrite, retry: true);
         }
@@ -387,7 +400,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       }
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = !retry && await authenticate();
+        final bool authenticated = !retry && await authenticateAgain();
         if (authenticated) {
           return getAllFiles(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
         }
@@ -424,7 +437,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return GoogleDriveFolder(folder: await _driveApi!.files.create(folder));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = !retry && await authenticate();
+        final bool authenticated = !retry && await authenticateAgain();
         if (authenticated) {
           return uploadFolder(name: name, parent: parent, retry: true);
         }
@@ -455,7 +468,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return Future.value(true);
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = await authenticate();
+        final bool authenticated = await authenticateAgain();
         if (authenticated) {
           await _driveApi!.files.delete(folder.folder.id!);
           return Future.value(true);
@@ -506,7 +519,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return res.files!.map((folder) => GoogleDriveFolder(folder: folder)).toList();
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = !retry && await authenticate();
+        final bool authenticated = !retry && await authenticateAgain();
         if (authenticated) {
           return getAllFolders(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
         }
@@ -530,7 +543,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       return res.files?.map((element) => GoogleDriveFolder(folder: element)).toList(growable: false) ?? [];
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
-        final bool authenticated = !retry && await authenticate();
+        final bool authenticated = !retry && await authenticateAgain();
         if (authenticated) {
           return getFoldersByName(name, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
         }
