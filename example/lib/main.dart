@@ -92,16 +92,18 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             const SizedBox(height: 15),
             OutlinedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => GoogleDriveDemo(
-                      delegateKey: selection!,
-                      driveScope: driveScope!,
-                    ),
-                  ),
-                );
-              },
+              onPressed: driveScope == null
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => GoogleDriveDemo(
+                            delegateKey: selection!,
+                            driveScope: driveScope!,
+                          ),
+                        ),
+                      );
+                    },
               child: const Text('Start demo'),
             )
           ],

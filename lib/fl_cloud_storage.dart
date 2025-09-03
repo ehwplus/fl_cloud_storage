@@ -12,3 +12,4 @@ export 'fl_cloud_storage/vendor/google_drive/google_drive_scope.dart';
 export 'fl_cloud_storage/vendor/google_drive/google_drive_service.dart' show GoogleDriveService;
 export 'fl_cloud_storage/vendor/storage_type.dart';
 export 'fl_cloud_storage/vendor/google_drive/too_many_requests_error.dart';
+export 'fl_cloud_storage/widget/sign_in_with_google_button.dart';

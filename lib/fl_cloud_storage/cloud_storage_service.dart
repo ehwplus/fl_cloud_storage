@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/logger.dart';
+import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_service.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
@@ -10,6 +11,16 @@ final Logger log = Logger(
   printer: MyPrinter('FL_CLOUD_STORAGE'),
   level: Level.info,
 );
+
+abstract class CloudStorageServiceListener {
+  void onSignIn();
+
+  void onAuthorized();
+
+  void onSignInFailed();
+
+  void onSignOut();
+}
 
 /// This class is the entrypoint for the fl_cloud_storage package. It is a
 /// factory that - given the [delegateKey] generates the according delegate
@@ -23,12 +34,16 @@ class CloudStorageService {
   static FutureOr<CloudStorageService> initialize<CloudStorageConfig>(
     StorageType delegate, {
     CloudStorageConfig? cloudStorageConfig,
+    CloudStorageServiceListener? listener,
+    GoogleDriveClientIdentifiers? googleDriveClientIdentifiers,
   }) async {
     final instance = CloudStorageService._(delegate);
     switch (delegate) {
       case StorageType.GOOGLE_DRIVE:
         instance._delegate = await GoogleDriveService.initialize(
           driveScope: cloudStorageConfig as GoogleDriveScope,
+          listener: listener,
+          identifiers: googleDriveClientIdentifiers,
         );
         break;
 
