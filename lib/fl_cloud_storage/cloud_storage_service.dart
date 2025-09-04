@@ -4,6 +4,7 @@ import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/util/logger.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_service.dart';
 import 'package:flutter/services.dart';
+import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:logger/logger.dart';
 
 /// Root logger.
@@ -12,10 +13,12 @@ final Logger log = Logger(
   level: Level.info,
 );
 
-abstract class CloudStorageServiceListener {
+abstract class CloudStorageServiceListener<API> {
   void onSignIn();
 
   void onAuthorized();
+
+  void onApiIsReady(API api);
 
   void onSignInFailed();
 
@@ -31,10 +34,10 @@ class CloudStorageService {
   CloudStorageService._(this.delegateKey);
 
   /// Maybe-async initialization of the cloud storage service.
-  static FutureOr<CloudStorageService> initialize<CloudStorageConfig>(
+  static FutureOr<CloudStorageService> initialize<CloudStorageConfig, API>(
     StorageType delegate, {
     CloudStorageConfig? cloudStorageConfig,
-    CloudStorageServiceListener? listener,
+    CloudStorageServiceListener<API>? listener,
     GoogleDriveClientIdentifiers? googleDriveClientIdentifiers,
   }) async {
     final instance = CloudStorageService._(delegate);
@@ -42,7 +45,7 @@ class CloudStorageService {
       case StorageType.GOOGLE_DRIVE:
         instance._delegate = await GoogleDriveService.initialize(
           driveScope: cloudStorageConfig as GoogleDriveScope,
-          listener: listener,
+          listener: listener as CloudStorageServiceListener<v3.DriveApi>,
           identifiers: googleDriveClientIdentifiers,
         );
         break;

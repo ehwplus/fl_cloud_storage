@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart' show CloudStorageServiceListener, log;
@@ -46,12 +47,14 @@ class GoogleDriveClientIdentifiers {
   const GoogleDriveClientIdentifiers({
     this.clientIdAndroid,
     this.clientIdIOS,
+    this.clientIdMacOS,
     this.clientIdWeb,
     this.serverClientId,
   });
 
   final String? clientIdAndroid;
   final String? clientIdIOS;
+  final String? clientIdMacOS;
   final String? clientIdWeb;
   final String? serverClientId;
 }
@@ -61,11 +64,12 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   /// Use `await GoogleDriveService.initialize()`.
   GoogleDriveService._(
     this.driveScope, {
-    CloudStorageServiceListener? listener,
+    CloudStorageServiceListener<v3.DriveApi>? listener,
     GoogleDriveClientIdentifiers? identifiers,
   })  : _listener = listener,
         _clientIdAndroid = identifiers?.clientIdAndroid,
         _clientIdIOS = identifiers?.clientIdIOS,
+        _clientIdMacOS = identifiers?.clientIdMacOS,
         _clientIdWeb = identifiers?.clientIdWeb,
         _serverClientId = identifiers?.serverClientId;
 
@@ -89,11 +93,12 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   String? _displayName;
   String? _photoUrl;
 
-  CloudStorageServiceListener? _listener;
+  CloudStorageServiceListener<v3.DriveApi>? _listener;
 
   final String? _clientIdAndroid;
   final String? _clientIdWeb;
   final String? _clientIdIOS;
+  final String? _clientIdMacOS;
   final String? _serverClientId;
 
   final GoogleDriveScope driveScope;
@@ -117,7 +122,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
 
   static Future<GoogleDriveService> initialize({
     GoogleDriveScope? driveScope,
-    CloudStorageServiceListener? listener,
+    CloudStorageServiceListener<v3.DriveApi>? listener,
     GoogleDriveClientIdentifiers? identifiers,
   }) async {
     final instance = GoogleDriveService._(
@@ -139,6 +144,7 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     if (_driveApi == null) {
       throw Exception('Failed to initialize Google drive API!');
     }
+    _listener?.onApiIsReady(_driveApi!);
   }
 
   // AUTH
@@ -172,7 +178,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
         _photoUrl = account.photoUrl;
         _listener?.onSignIn();
 
-        await _authorize(account: account);
+        final isAuthorized = await _authorize(account: account);
+        if (isAuthorized) {
+          await _initializeApi();
+        }
       } else if (event is GoogleSignInAuthenticationEventSignOut) {
         await logout();
         _listener?.onSignOut();
@@ -185,8 +194,20 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       log.e('Auth error: $error');
     });
 
-    await signIn.initialize(
-        clientId: kIsWeb ? _clientIdWeb : _clientIdAndroid, serverClientId: kIsWeb ? null : _serverClientId);
+    String? clientId() {
+      if (kIsWeb) {
+        return _clientIdWeb;
+      } else if (Platform.isAndroid) {
+        return _clientIdAndroid;
+      } else if (Platform.isIOS) {
+        return _clientIdIOS;
+      } else if (Platform.isMacOS) {
+        return _clientIdMacOS;
+      }
+      throw UnsupportedError('Unsupported platform');
+    }
+
+    await signIn.initialize(clientId: clientId(), serverClientId: kIsWeb ? null : _serverClientId);
 
     //signIn.authenticationEvents.listen(_handleAuthenticationEvent).onError(_handleAuthenticationError);
 
