@@ -34,10 +34,10 @@ class CloudStorageService {
   CloudStorageService._(this.delegateKey);
 
   /// Maybe-async initialization of the cloud storage service.
-  static FutureOr<CloudStorageService> initialize<CloudStorageConfig, API>(
+  static FutureOr<CloudStorageService> initialize<CloudStorageConfig>(
     StorageType delegate, {
     CloudStorageConfig? cloudStorageConfig,
-    CloudStorageServiceListener<API>? listener,
+    CloudStorageServiceListener<dynamic>? listener,
     GoogleDriveClientIdentifiers? googleDriveClientIdentifiers,
   }) async {
     final instance = CloudStorageService._(delegate);
@@ -45,7 +45,7 @@ class CloudStorageService {
       case StorageType.GOOGLE_DRIVE:
         instance._delegate = await GoogleDriveService.initialize(
           driveScope: cloudStorageConfig as GoogleDriveScope,
-          listener: listener as CloudStorageServiceListener<v3.DriveApi>,
+          listener: listener as CloudStorageServiceListener<v3.DriveApi>?,
           identifiers: googleDriveClientIdentifiers,
         );
         break;

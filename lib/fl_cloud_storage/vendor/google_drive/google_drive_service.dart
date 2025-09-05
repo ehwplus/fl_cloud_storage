@@ -250,6 +250,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       _isAuthenticated = false;
       return false;
     }
+    _authenticationTokens = AuthenticationTokens(
+      idToken: idToken,
+      accessToken: _authenticationTokens?.accessToken,
+    );
     _listener?.onSignIn();
     _isAuthenticated = true;
 
