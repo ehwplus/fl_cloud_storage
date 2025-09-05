@@ -6,6 +6,7 @@ import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/vendor/google_drive/google_drive_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:googleapis/drive/v3.dart' as v3;
 
 class GoogleDriveDemo extends StatefulWidget {
   const GoogleDriveDemo({
@@ -22,31 +23,30 @@ class GoogleDriveDemo extends StatefulWidget {
   State<GoogleDriveDemo> createState() => _GoogleDriveDemoState();
 }
 
-class _GoogleDriveDemoState extends State<GoogleDriveDemo> implements CloudStorageServiceListener {
-  late Future<CloudStorageService> service;
+class _GoogleDriveDemoState extends State<GoogleDriveDemo> implements CloudStorageServiceListener<v3.DriveApi> {
+  late Future<CloudStorageService> future;
+
+  CloudStorageService? service;
 
   bool? isSignedIn;
-
-  static const String _clientIdAndroid = '<projectId>-<clientIdAndroid>.apps.googleusercontent.com';
-  static const String _clientIdWeb = '<projectId>-<clientIdWeb>.apps.googleusercontent.com';
-  static const String _clientIdIOS = '<projectId>-<clientIdIOS>.apps.googleusercontent.com';
-  static const String _serverClientId = '<projectId>-<serverClientId>.apps.googleusercontent.com';
 
   @override
   void initState() {
     super.initState();
-    service = Future.value(CloudStorageService.initialize<GoogleDriveScope>(
+    future = Future.value(CloudStorageService.initialize<GoogleDriveScope, v3.DriveApi>(
       widget.delegateKey,
       cloudStorageConfig: widget.driveScope,
       listener: this,
       googleDriveClientIdentifiers: const GoogleDriveClientIdentifiers(
-        clientIdAndroid: _clientIdAndroid,
-        clientIdIOS: _clientIdIOS,
-        clientIdWeb: _clientIdWeb,
-        serverClientId: _serverClientId,
+        clientIdAndroid: String.fromEnvironment('CLIENT_ID_ANDROID'),
+        clientIdIOS: String.fromEnvironment('CLIENT_ID_IOS'),
+        clientIdMacOS: String.fromEnvironment('CLIENT_ID_MACOS'),
+        clientIdWeb: String.fromEnvironment('CLIENT_ID_WEB'),
+        serverClientId: String.fromEnvironment('CLIENT_ID_WEB'),
       ),
     ));
-    service.then((CloudStorageService value) {
+    future.then((CloudStorageService value) {
+      service = value;
       isSignedIn = value.isSignedIn;
     });
   }
@@ -57,124 +57,130 @@ class _GoogleDriveDemoState extends State<GoogleDriveDemo> implements CloudStora
       appBar: AppBar(title: const Text('Google Drive')),
       body: kIsWeb && isSignedIn == null
           ? const SignInWithGoogleButtonForWeb()
-          : FutureBuilder(
-              future: service,
-              builder: (context, AsyncSnapshot<CloudStorageService> snapshot) {
-                switch (snapshot.connectionState) {
-                  case ConnectionState.none:
-                  case ConnectionState.waiting:
-                    return const Center(child: CircularProgressIndicator());
-                  case ConnectionState.active:
-                  case ConnectionState.done:
-                    if (!snapshot.hasData) {
-                      return Center(
-                        child: Text(
-                          'hasData: ${snapshot.hasData}\n\nhasError: ${snapshot.hasError}\n\nerror: ${snapshot.error}',
-                        ),
-                      );
-                    }
-                    final svc = snapshot.data!;
-                    if (!svc.isSignedIn) {
-                      return Center(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            await svc.authenticate();
-                            setState(() {});
-                          },
-                          child: const Text('Authenticate'),
-                        ),
-                      );
-                    }
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            OutlinedButton(
-                              onPressed: () {
+          : kIsWeb && isSignedIn == true && service != null
+              ? _userIsSignedInWidget(service!)
+              : FutureBuilder(
+                  future: future,
+                  builder: (context, AsyncSnapshot<CloudStorageService> snapshot) {
+                    switch (snapshot.connectionState) {
+                      case ConnectionState.none:
+                      case ConnectionState.waiting:
+                        return const Center(child: CircularProgressIndicator());
+                      case ConnectionState.active:
+                      case ConnectionState.done:
+                        if (!snapshot.hasData) {
+                          return Center(
+                            child: Text(
+                              'hasData: ${snapshot.hasData}\n\nhasError: ${snapshot.hasError}\n\nerror: ${snapshot.error}',
+                            ),
+                          );
+                        }
+                        final cloudStorageService = snapshot.data!;
+                        if (!cloudStorageService.isSignedIn) {
+                          return Center(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                await cloudStorageService.authenticate();
                                 setState(() {});
                               },
-                              child: const Text('Force refresh view'),
+                              child: const Text('Authenticate'),
                             ),
-                            const SizedBox(
-                              width: 25,
-                            ),
-                            if (isSignedIn == true)
-                              OutlinedButton(
-                                onPressed: () async {
-                                  await svc.logout();
-                                  setState(() {}); // refresh view
-                                },
-                                child: const Text('Logout'),
-                              ),
-                          ],
-                        ),
-                        FutureBuilder(
-                          future: Future.value(svc.getAllFiles(
-                            ignoreTrashedFiles: false,
-                          )),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              List files = snapshot.data!;
-                              return SingleChildScrollView(
-                                child: Column(
-                                  children: [
-                                    Text('Seeing ${files.length} files'),
-                                    Wrap(
-                                      runSpacing: 16,
-                                      spacing: 16,
-                                      alignment: WrapAlignment.center,
-                                      children: files
-                                          .map((e) => Card(
-                                                downloadFn: ({required file}) => onDownloadFile(
-                                                  cloudStorageService: svc,
-                                                  file: file,
-                                                ),
-                                                deleteFn: ({required CloudFile<dynamic> file}) => onDelete(
-                                                  cloudStorageService: svc,
-                                                  file: file,
-                                                ),
-                                                checkIfExistsFn: ({required file}) => checkIfExists(
-                                                  cloudStorageService: svc,
-                                                  file: file,
-                                                ),
-                                                file: e,
-                                              ))
-                                          .toList(),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            return const CircularProgressIndicator();
-                          },
-                        ),
-                        const Divider(),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              final List<int> bytes = utf8.encode('Das Wandern ist des Müllers Lust.');
-                              final file = GoogleDriveFile(
-                                fileId: null,
-                                fileName: 'wandern.txt',
-                                description: 'Über das Wandern',
-                                parents: [],
-                                bytes: bytes,
-                              );
-                              await svc.uploadFile(file: file);
-                              setState(() {}); // refresh view
-                            },
-                            child: const Text('Upload a random.txt file'),
-                          ),
-                        ),
-                      ],
-                    );
-                }
+                          );
+                        }
+                        return _userIsSignedInWidget(cloudStorageService);
+                    }
+                  },
+                ),
+    );
+  }
+
+  Widget _userIsSignedInWidget(CloudStorageService cloudStorageService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            OutlinedButton(
+              onPressed: () {
+                setState(() {});
               },
+              child: const Text('Force refresh view'),
             ),
+            const SizedBox(
+              width: 25,
+            ),
+            if (isSignedIn == true)
+              OutlinedButton(
+                onPressed: () async {
+                  await cloudStorageService.logout();
+                  setState(() {}); // refresh view
+                },
+                child: const Text('Logout'),
+              ),
+          ],
+        ),
+        FutureBuilder(
+          future: Future.value(cloudStorageService.getAllFiles(
+            ignoreTrashedFiles: false,
+          )),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              List files = snapshot.data!;
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Text('Seeing ${files.length} files'),
+                    Wrap(
+                      runSpacing: 16,
+                      spacing: 16,
+                      alignment: WrapAlignment.center,
+                      children: files
+                          .map((e) => Card(
+                                downloadFn: ({required file}) => onDownloadFile(
+                                  cloudStorageService: cloudStorageService,
+                                  file: file,
+                                ),
+                                deleteFn: ({required CloudFile<dynamic> file}) => onDelete(
+                                  cloudStorageService: cloudStorageService,
+                                  file: file,
+                                ),
+                                checkIfExistsFn: ({required file}) => checkIfExists(
+                                  cloudStorageService: cloudStorageService,
+                                  file: file,
+                                ),
+                                file: e,
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const CircularProgressIndicator();
+          },
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: OutlinedButton(
+            onPressed: () async {
+              final List<int> bytes = utf8.encode('Das Wandern ist des Müllers Lust.');
+              final file = GoogleDriveFile(
+                fileId: null,
+                fileName: 'wandern.txt',
+                description: 'Über das Wandern',
+                parents: [],
+                bytes: bytes,
+              );
+              await cloudStorageService.uploadFile(file: file);
+              setState(() {}); // refresh view
+            },
+            child: const Text('Upload a random.txt file'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -228,21 +234,33 @@ class _GoogleDriveDemoState extends State<GoogleDriveDemo> implements CloudStora
 
   @override
   void onAuthorized() {
+    print('onAuthorized');
     setState(() {});
   }
 
   @override
   void onSignIn() {
-    setState(() {});
+    print('onSignIn');
+    setState(() {
+      isSignedIn = true;
+    });
   }
 
   @override
   void onSignInFailed() {
+    print('onSignInFailed');
     setState(() {});
   }
 
   @override
   void onSignOut() {
+    print('onSignOut');
+    setState(() {});
+  }
+
+  @override
+  void onApiIsReady(v3.DriveApi api) {
+    print('onApiIsReady');
     setState(() {});
   }
 }

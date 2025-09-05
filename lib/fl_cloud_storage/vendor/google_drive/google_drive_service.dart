@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart' show CloudStorageServiceListener, log;
+import 'package:fl_cloud_storage/fl_cloud_storage/util/jwt_validation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart'
@@ -10,7 +11,6 @@ import 'package:google_sign_in/google_sign_in.dart'
         GoogleSignIn,
         GoogleSignInAccount,
         GoogleSignInAuthentication,
-        GoogleSignInClientAuthorization,
         GoogleSignInException,
         GoogleSignInAuthenticationEventSignIn,
         GoogleSignInAuthenticationEventSignOut;
@@ -71,7 +71,44 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
         _clientIdIOS = identifiers?.clientIdIOS,
         _clientIdMacOS = identifiers?.clientIdMacOS,
         _clientIdWeb = identifiers?.clientIdWeb,
-        _serverClientId = identifiers?.serverClientId;
+        _serverClientId = identifiers?.serverClientId {
+    final GoogleSignIn signIn = GoogleSignIn.instance;
+
+    GoogleSignIn.instance.authenticationEvents.listen((event) async {
+      if (event is GoogleSignInAuthenticationEventSignIn) {
+        final account = event.user;
+        final idToken = account.authentication.idToken;
+        debugPrint('Signed in as ${account.email}, idToken len: ${idToken?.length}');
+
+        _isAuthorized = true;
+
+        _authenticationTokens = AuthenticationTokens(
+          idToken: idToken,
+          accessToken: _authenticationTokens?.accessToken,
+        );
+        _email = account.email;
+        _displayName = account.displayName;
+        _photoUrl = account.photoUrl;
+        _listener?.onSignIn();
+
+        final isAuthorized = await _authorize(account: account);
+        if (isAuthorized) {
+          await _initializeApi();
+        } else {
+          log.e('Failed to initialize api, authorization failed');
+        }
+      } else if (event is GoogleSignInAuthenticationEventSignOut) {
+        await logout();
+        _listener?.onSignOut();
+      } else {
+        log.e('Listener received unhandled event of type ${event.toString()}');
+      }
+    }, onError: (dynamic error, st) {
+      log.e('Auth error: $error');
+    }).onError((dynamic error) {
+      log.e('Auth error: $error');
+    });
+  }
 
   /// Google drive service is supported on all platforms.
   ///
@@ -120,6 +157,24 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   @override
   String? get photoUrl => _photoUrl;
 
+  Future<void> _initialize() async {
+    final signIn = GoogleSignIn.instance;
+    String? clientId() {
+      if (kIsWeb) {
+        return _clientIdWeb;
+      } else if (Platform.isAndroid) {
+        return _clientIdAndroid;
+      } else if (Platform.isIOS) {
+        return _clientIdIOS;
+      } else if (Platform.isMacOS) {
+        return _clientIdMacOS;
+      }
+      throw UnsupportedError('Unsupported platform');
+    }
+
+    await signIn.initialize(clientId: clientId(), serverClientId: kIsWeb ? null : _serverClientId);
+  }
+
   static Future<GoogleDriveService> initialize({
     GoogleDriveScope? driveScope,
     CloudStorageServiceListener<v3.DriveApi>? listener,
@@ -130,20 +185,26 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       listener: listener,
       identifiers: identifiers,
     );
-    await instance.authenticate();
-    await instance._initializeApi();
+    await instance._initialize();
+    if (!kIsWeb) {
+      await instance.authenticate();
+      await instance._initializeApi();
+    }
     return instance;
   }
 
   Future<void> _initializeApi() async {
+    final idToken = _authenticationTokens?.idToken;
+    if (idToken == null || JwtValidation.isExpired(idToken)) {
+      throw Exception(
+          'Failed to initialize Google drive API, because id token is ${idToken == null ? 'null' : 'expired'}!');
+    }
     final accessToken = _authenticationTokens?.accessToken;
-    if (_isAuthenticated && _isAuthorized && accessToken != null) {
-      final http.Client client = _GoogleAuthClient(accessToken);
-      _driveApi = v3.DriveApi(client);
+    if (accessToken == null) {
+      throw Exception('Failed to initialize Google drive API, because access token is null!');
     }
-    if (_driveApi == null) {
-      throw Exception('Failed to initialize Google drive API!');
-    }
+    final http.Client client = _GoogleAuthClient(accessToken);
+    _driveApi = v3.DriveApi(client);
     _listener?.onApiIsReady(_driveApi!);
   }
 
@@ -163,51 +224,6 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   Future<bool> authenticate() async {
     // #docregion Setup
     final GoogleSignIn signIn = GoogleSignIn.instance;
-
-    GoogleSignIn.instance.authenticationEvents.listen((event) async {
-      if (event is GoogleSignInAuthenticationEventSignIn) {
-        final account = event.user;
-        final idToken = account.authentication.idToken;
-        debugPrint('Signed in as ${account.email}, idToken len: ${idToken?.length}');
-
-        _isAuthorized = true;
-
-        _authenticationTokens = AuthenticationTokens(idToken: idToken, accessToken: null);
-        _email = account.email;
-        _displayName = account.displayName;
-        _photoUrl = account.photoUrl;
-        _listener?.onSignIn();
-
-        final isAuthorized = await _authorize(account: account);
-        if (isAuthorized) {
-          await _initializeApi();
-        }
-      } else if (event is GoogleSignInAuthenticationEventSignOut) {
-        await logout();
-        _listener?.onSignOut();
-      } else {
-        log.e('Listener received unhandled event of type ${event.toString()}');
-      }
-    }, onError: (dynamic error, st) {
-      log.e('Auth error: $error');
-    }).onError((dynamic error) {
-      log.e('Auth error: $error');
-    });
-
-    String? clientId() {
-      if (kIsWeb) {
-        return _clientIdWeb;
-      } else if (Platform.isAndroid) {
-        return _clientIdAndroid;
-      } else if (Platform.isIOS) {
-        return _clientIdIOS;
-      } else if (Platform.isMacOS) {
-        return _clientIdMacOS;
-      }
-      throw UnsupportedError('Unsupported platform');
-    }
-
-    await signIn.initialize(clientId: clientId(), serverClientId: kIsWeb ? null : _serverClientId);
 
     //signIn.authenticationEvents.listen(_handleAuthenticationEvent).onError(_handleAuthenticationError);
 
@@ -241,12 +257,25 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   Future<bool> _authorize({required GoogleSignInAccount account}) async {
-    final idToken = account.authentication.idToken;
+    final idToken = _authenticationTokens?.idToken;
+    final existingAccessToken = _authenticationTokens?.accessToken;
+    if (idToken != null && existingAccessToken != null) {
+      final bool isExpired = JwtValidation.isExpired(idToken);
+      if (!isExpired) {
+        return true;
+      }
+    }
+
     try {
-      final GoogleSignInClientAuthorization authorization = await account.authorizationClient.authorizeScopes(
-        driveScope == GoogleDriveScope.full ? _googleDriveFullScope : _googleDriveSingleUserScope,
+      final scopes = driveScope == GoogleDriveScope.full ? _googleDriveFullScope : _googleDriveSingleUserScope;
+      final authorizationWithoutUserInteraction = await account.authorizationClient.authorizationForScopes(
+        scopes,
       );
-      final accessToken = authorization.accessToken;
+      String? accessToken = authorizationWithoutUserInteraction?.accessToken;
+      if (accessToken == null) {
+        final authorization = await account.authorizationClient.authorizeScopes(scopes);
+        accessToken = authorization.accessToken;
+      }
 
       _authenticationTokens = AuthenticationTokens(idToken: idToken, accessToken: accessToken);
       _email = account.email;
