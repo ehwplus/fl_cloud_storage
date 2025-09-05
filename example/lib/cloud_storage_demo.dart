@@ -33,7 +33,7 @@ class _GoogleDriveDemoState extends State<GoogleDriveDemo> implements CloudStora
   @override
   void initState() {
     super.initState();
-    future = Future.value(CloudStorageService.initialize<GoogleDriveScope, v3.DriveApi>(
+    future = Future.value(CloudStorageService.initialize<GoogleDriveScope>(
       widget.delegateKey,
       cloudStorageConfig: widget.driveScope,
       listener: this,
