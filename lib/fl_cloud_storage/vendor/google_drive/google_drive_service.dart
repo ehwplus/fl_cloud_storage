@@ -242,7 +242,20 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       final mimeTypeParts = contentType.split('/');
       if (mimeTypeParts.isNotEmpty) {
         final prefix = mimeTypeParts.first;
-        return {'application', 'message', 'model', 'text'}.contains(prefix);
+        final subtype = mimeTypeParts.length > 1 ? mimeTypeParts[1] : '';
+        
+        // Exclude binary application types
+        if (prefix == 'application') {
+          final binaryTypes = {
+            'zip', 'gzip', 'tar', 'rar', '7z',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx',
+            'ppt', 'pptx', 'exe', 'bin', 'dmg',
+            'iso', 'img', 'deb', 'rpm'
+          };
+          return !binaryTypes.contains(subtype);
+        }
+        
+        return {'message', 'model', 'text'}.contains(prefix);
       }
       return false;
     }
