@@ -281,13 +281,23 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       Future<v3.Media?> getMedia(v3.Media media) async {
         try {
           final List<int> bytes = [];
-          media.stream.listen((List<int> data) {
-            bytes.insertAll(bytes.length, data);
-          }, onDone: () async {
-            onBytesDownloaded?.call(Uint8List.fromList(bytes));
-          }, onError: (dynamic error) {
-            debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
-          });
+          final Completer<void> completer = Completer<void>();
+          
+          media.stream.listen(
+            (List<int> data) {
+              bytes.addAll(data); // Use addAll instead of insertAll for better performance
+            },
+            onDone: () {
+              onBytesDownloaded?.call(Uint8List.fromList(bytes));
+              completer.complete(); // Signal that download is complete
+            },
+            onError: (dynamic error) {
+              debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
+              completer.completeError(error);
+            },
+          );
+          
+          await completer.future; // Wait for the stream to complete
           return media;
         } catch (e) {
           return null;
