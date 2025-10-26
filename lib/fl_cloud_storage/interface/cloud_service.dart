@@ -4,7 +4,8 @@ import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_file.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/interface/cloud_folder.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/model/authentication_tokens.dart';
 
-abstract class ICloudService<FILE extends CloudFile<dynamic>, FOLDER extends CloudFolder<dynamic>> extends Type {
+abstract class ICloudService<FILE extends CloudFile<dynamic>,
+    FOLDER extends CloudFolder<dynamic>> extends Type {
   /// Used to initialize this service asynchronously.
   static Future<void> initialize() {
     throw UnimplementedError();
@@ -42,10 +43,12 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>, FOLDER extends Clo
   // FILES
 
   /// Check if file exists in cloud.
-  Future<bool> doesFileExist({required FILE file, bool ignoreTrashedFiles = true});
+  Future<bool> doesFileExist(
+      {required FILE file, bool ignoreTrashedFiles = true});
 
   /// List all files or those of a folder if not null
-  Future<List<FILE>> getAllFiles({FOLDER? folder, bool ignoreTrashedFiles = true});
+  Future<List<FILE>> getAllFiles(
+      {FOLDER? folder, bool ignoreTrashedFiles = true});
 
   /// Create or update a file
   /// This method is meant to be idempotent but must not lead to data loss when
@@ -60,17 +63,20 @@ abstract class ICloudService<FILE extends CloudFile<dynamic>, FOLDER extends Clo
   Future<bool> deleteFile({required FILE file});
 
   /// Download a file
-  Future<FILE> downloadFile({required FILE file, void Function(Uint8List bytes)? onBytesDownloaded});
+  Future<FILE> downloadFile(
+      {required FILE file, void Function(Uint8List bytes)? onBytesDownloaded});
 
   // FOLDERS
 
   /// List all folders in the storage vendor.
   /// If optionally a folder is passed as parameter, then all folders in that
   /// folder will be returned.
-  Future<List<FOLDER>> getAllFolders({FOLDER? folder, bool ignoreTrashedFiles = true});
+  Future<List<FOLDER>> getAllFolders(
+      {FOLDER? folder, bool ignoreTrashedFiles = true});
 
   /// Get a [CloudFolder] by name.
-  Future<List<FOLDER>> getFoldersByName(String name, {bool ignoreTrashedFiles = true});
+  Future<List<FOLDER>> getFoldersByName(String name,
+      {bool ignoreTrashedFiles = true});
 
   /// Create or update a folder
   /// This method is meant to be idempotent.

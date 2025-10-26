@@ -1,3 +1,7 @@
+## 0.3.4
+
+* Fix: Cannot Download Binary Files (Incomplete Bytes Issue)
+
 ## 0.3.3
 
 * Fix: Authentication should renew the driveApi as well

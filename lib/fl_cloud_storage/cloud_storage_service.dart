@@ -59,7 +59,8 @@ class CloudStorageService {
   String? get displayName => _delegate.displayName;
 
   /// Expose the tokens
-  AuthenticationTokens? get authenticationTokens => _delegate.authenticationTokens;
+  AuthenticationTokens? get authenticationTokens =>
+      _delegate.authenticationTokens;
 
   /// Invokes the [authenticate] method of the delegate instance.
   FutureOr<bool> authenticate() {
@@ -88,7 +89,8 @@ class CloudStorageService {
     required CloudFile<dynamic> file,
     bool ignoreTrashedFiles = true,
   }) async {
-    return _delegate.doesFileExist(file: file, ignoreTrashedFiles: ignoreTrashedFiles);
+    return _delegate.doesFileExist(
+        file: file, ignoreTrashedFiles: ignoreTrashedFiles);
   }
 
   /// Invokes the [deleteFile] method of the delegate instance.
@@ -133,7 +135,8 @@ class CloudStorageService {
     void Function(Uint8List bytes)? onBytesDownloaded,
   }) async {
     try {
-      return _delegate.downloadFile(file: file, onBytesDownloaded: onBytesDownloaded);
+      return _delegate.downloadFile(
+          file: file, onBytesDownloaded: onBytesDownloaded);
     } catch (ex) {
       log.e(ex);
     }
@@ -174,7 +177,8 @@ class CloudStorageService {
     bool ignoreTrashedFiles = true,
   }) {
     try {
-      return _delegate.getFoldersByName(name, ignoreTrashedFiles: ignoreTrashedFiles);
+      return _delegate.getFoldersByName(name,
+          ignoreTrashedFiles: ignoreTrashedFiles);
     } catch (ex) {
       log.e(ex);
     }
@@ -187,7 +191,8 @@ class CloudStorageService {
     bool ignoreTrashedFiles = true,
   }) {
     try {
-      return _delegate.getAllFolders(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles);
+      return _delegate.getAllFolders(
+          folder: folder, ignoreTrashedFiles: ignoreTrashedFiles);
     } catch (ex) {
       log.e(ex);
     }
