@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
@@ -242,7 +243,20 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       final mimeTypeParts = contentType.split('/');
       if (mimeTypeParts.isNotEmpty) {
         final prefix = mimeTypeParts.first;
-        return {'application', 'message', 'model', 'text'}.contains(prefix);
+        final subtype = mimeTypeParts.length > 1 ? mimeTypeParts[1] : '';
+        
+        // Exclude binary application types
+        if (prefix == 'application') {
+          final binaryTypes = {
+            'zip', 'gzip', 'tar', 'rar', '7z',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx',
+            'ppt', 'pptx', 'exe', 'bin', 'dmg',
+            'iso', 'img', 'deb', 'rpm'
+          };
+          return !binaryTypes.contains(subtype);
+        }
+        
+        return {'message', 'model', 'text'}.contains(prefix);
       }
       return false;
     }
@@ -268,13 +282,23 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       Future<v3.Media?> getMedia(v3.Media media) async {
         try {
           final List<int> bytes = [];
-          media.stream.listen((List<int> data) {
-            bytes.insertAll(bytes.length, data);
-          }, onDone: () async {
-            onBytesDownloaded?.call(Uint8List.fromList(bytes));
-          }, onError: (dynamic error) {
-            debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
-          });
+          final Completer<void> completer = Completer<void>();
+          
+          media.stream.listen(
+            (List<int> data) {
+              bytes.addAll(data); // Use addAll instead of insertAll for better performance
+            },
+            onDone: () {
+              onBytesDownloaded?.call(Uint8List.fromList(bytes));
+              completer.complete(); // Signal that download is complete
+            },
+            onError: (dynamic error) {
+              debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
+              completer.completeError(error);
+            },
+          );
+          
+          await completer.future; // Wait for the stream to complete
           return media;
         } catch (e) {
           return null;
