@@ -1,3 +1,7 @@
+## 0.3.5
+
+* Fix: CloudStorageService.authenticate should be async
+
 ## 0.3.4
 
 * Fix: Cannot Download Binary Files (Incomplete Bytes Issue)

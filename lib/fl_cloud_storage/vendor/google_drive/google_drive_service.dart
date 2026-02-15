@@ -152,12 +152,12 @@ class GoogleDriveService
       return (await googleSignIn.signInSilently(suppressErrors: false)) ??
           (interactiveLogin ? await googleSignIn.signIn() : null);
     } catch (e) {
-      if (!interactiveLogin) {
+      log.e(e);
+      if (interactiveLogin) {
         return googleSignIn.signIn();
       }
-      log.e(e);
+      return null;
     }
-    return null;
   }
 
   @override

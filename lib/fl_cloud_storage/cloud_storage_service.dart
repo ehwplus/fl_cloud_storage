@@ -63,9 +63,9 @@ class CloudStorageService {
       _delegate.authenticationTokens;
 
   /// Invokes the [authenticate] method of the delegate instance.
-  FutureOr<bool> authenticate() {
+  FutureOr<bool> authenticate() async {
     try {
-      return _delegate.authenticate();
+      return await _delegate.authenticate();
     } catch (ex) {
       log.e(ex);
     }
