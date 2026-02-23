@@ -135,21 +135,22 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       }
       final resultOfSilentSignIn = await googleSignIn.signInSilently(suppressErrors: false, reAuthenticate: true);
       return resultOfSilentSignIn ?? await googleSignIn.signIn();
-    } on PlatformException catch (e) {
+    } on PlatformException catch (e1) {
+      try {
+        return googleSignIn.signIn();
+      } catch (e2) {
+        log
+          ..e(e1)
+          ..e(e2);
+        return null;
+      }
+
       // Connection error making token request to 'https://oauth2.googleapis.com/token': The operation couldn’t be completed. Operation not permitted.
-      if ((e.code == 'sign_in_failed') ||
+      /*if ((e.code == 'sign_in_failed') ||
           (e.code == 'sign_in_canceled' && e.message == 'org.openid.appauth.general') ||
           (e.code == 'sign_in_required' &&
               e.message?.contains('com.google.android.gms.common.api.ApiException') == true)) {
-        try {
-          return googleSignIn.signIn();
-        } catch (e) {
-          log.e(e);
-        }
-      }
-
-      log.e(e);
-      return null;
+      }*/
     }
   }
 
