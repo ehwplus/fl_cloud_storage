@@ -8,6 +8,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     this.parents,
     required this.bytes,
     this.description,
+    this.modifiedTime,
     drive.Media? media,
     this.fileContent,
     this.mimeType,
@@ -35,6 +36,9 @@ class GoogleDriveFile implements CloudFile<drive.File> {
   /// Optional value. Some text that is stored in the metadata of the file.
   final String? description;
 
+  /// Last modification time on Google Drive (if available).
+  final DateTime? modifiedTime;
+
   @override
   final bool trashed;
 
@@ -44,6 +48,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       ..id = fileId
       ..name = fileName
       ..description = description
+      ..modifiedTime = modifiedTime
       ..mimeType = mimeType
       ..parents = parents;
   }
@@ -69,6 +74,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
     String? fileId,
     String? fileName,
     String? description,
+    DateTime? modifiedTime,
     List<String>? parents,
     String? mimeType,
     bool? trashed,
@@ -80,6 +86,7 @@ class GoogleDriveFile implements CloudFile<drive.File> {
       fileId: fileId ?? this.fileId,
       fileName: fileName ?? this.fileName,
       description: description ?? this.description,
+      modifiedTime: modifiedTime ?? this.modifiedTime,
       parents: parents ?? this.parents,
       bytes: bytes ?? this.bytes,
       media: media ?? this.media,
