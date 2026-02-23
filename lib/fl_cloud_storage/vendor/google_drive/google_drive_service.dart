@@ -392,23 +392,25 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     final List<GoogleDriveFile> result = [];
 
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
-    v3.FileList? res;
+    v3.FileList res;
+    String? nextPageToken;
     try {
       do {
-        // Complete the files list, otherwise maximum 100 files are returned
-        if (folder == null) {
-          res = await _driveApi!.files.list(
-            $fields: 'files/*',
-            q: 'trashed=${!ignoreTrashedFiles}',
-          );
-        } else {
-          res = await _driveApi!.files.list(
-            $fields: 'files/*',
-            q: "'${folder.folder.id}' in parents and trashed=${!ignoreTrashedFiles}",
-          );
-        }
+        final List<String> queryClauses = [
+          if (folder != null) "'${folder.folder.id}' in parents",
+        ];
+        final query = _buildQuery(queryClauses, ignoreTrashedFiles: ignoreTrashedFiles);
+        res = await _driveApi!.files.list(
+          $fields: 'files/*,nextPageToken',
+          q: query,
+          pageToken: nextPageToken,
+        );
 
-        for (final v3.File file in res.files!) {
+        final files = res.files;
+        if (files == null) {
+          throw Exception('Unable to list all files!');
+        }
+        for (final v3.File file in files) {
           final driveFile = GoogleDriveFile(
             fileId: file.id,
             fileName: file.name!,
@@ -420,11 +422,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
           );
           result.add(driveFile);
         }
-      } while (res.nextPageToken != null);
-
-      if (res.files == null) {
-        throw Exception('Unable to list all files!');
-      }
+        nextPageToken = res.nextPageToken;
+      } while (nextPageToken != null);
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = !retry && await authenticate();
@@ -529,14 +528,12 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     try {
       // Completes with a commons.ApiRequestError if the API endpoint returned an error
       final v3.FileList res;
-      if (folder == null) {
-        res = await _driveApi!.files
-            .list(q: "mimeType = 'application/vnd.google-apps.folder' and trashed=${!ignoreTrashedFiles}");
-      } else {
-        res = await _driveApi!.files.list(
-          q: "mimeType = 'application/vnd.google-apps.folder' and '${folder.folder.id}' in parents and trashed=${!ignoreTrashedFiles}",
-        );
-      }
+      final List<String> queryClauses = [
+        "mimeType = 'application/vnd.google-apps.folder'",
+        if (folder != null) "'${folder.folder.id}' in parents",
+      ];
+      final query = _buildQuery(queryClauses, ignoreTrashedFiles: ignoreTrashedFiles);
+      res = await _driveApi!.files.list(q: query);
       if (res.nextPageToken != null) {
         // TODO complete the files list
       }
@@ -564,8 +561,15 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     }
 
     try {
+      final query = _buildQuery(
+        [
+          "mimeType = 'application/vnd.google-apps.folder'",
+          "name = '$name'",
+        ],
+        ignoreTrashedFiles: ignoreTrashedFiles,
+      );
       final v3.FileList res = await _driveApi!.files.list(
-        q: "mimeType = 'application/vnd.google-apps.folder' and name = '$name' and trashed=${!ignoreTrashedFiles}",
+        q: query,
       );
       return res.files?.map((element) => GoogleDriveFolder(folder: element)).toList(growable: false) ?? [];
     } on v3.DetailedApiRequestError catch (e) {
@@ -578,5 +582,16 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       }
       throw Exception('Unable to get Google Drive folders with name $name');
     }
+  }
+
+  String? _buildQuery(List<String> baseClauses, {required bool ignoreTrashedFiles}) {
+    final queryClauses = <String>[
+      ...baseClauses,
+      if (ignoreTrashedFiles) 'and trashed=false',
+    ];
+    if (queryClauses.isEmpty) {
+      return null;
+    }
+    return queryClauses.join(' and ');
   }
 }
