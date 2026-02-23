@@ -7,6 +7,8 @@ export 'fl_cloud_storage/interface/cloud_service.dart' show ICloudService;
 export 'fl_cloud_storage/model/authentication_tokens.dart';
 export 'fl_cloud_storage/util/platform_support_enum.dart'
     show PlatformSupportEnum;
+export 'fl_cloud_storage/vendor/google_drive/error/google_drive_api_not_initialized_exception.dart';
+export 'fl_cloud_storage/vendor/google_drive/error/too_many_requests_error.dart';
 export 'fl_cloud_storage/vendor/google_drive/google_drive_file.dart'
     show GoogleDriveFile;
 export 'fl_cloud_storage/vendor/google_drive/google_drive_folder.dart'
@@ -15,4 +17,3 @@ export 'fl_cloud_storage/vendor/google_drive/google_drive_scope.dart';
 export 'fl_cloud_storage/vendor/google_drive/google_drive_service.dart'
     show GoogleDriveService;
 export 'fl_cloud_storage/vendor/storage_type.dart';
-export 'fl_cloud_storage/vendor/google_drive/too_many_requests_error.dart';

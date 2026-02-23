@@ -1,3 +1,7 @@
+## 0.3.6
+
+* Fix: A fresh login was no longer possible with version 0.3.5.
+
 ## 0.3.5
 
 * Fix: CloudStorageService.authenticate should be async

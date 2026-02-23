@@ -37,7 +37,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   StorageType? selection = StorageType.GOOGLE_DRIVE;
 
-  GoogleDriveScope? driveScope;
+  GoogleDriveScope driveScope = GoogleDriveScope.appData;
 
   @override
   Widget build(BuildContext context) {
@@ -85,9 +85,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     )
                     .toList(),
                 onChanged: (GoogleDriveScope? value) {
-                  setState(() {
-                    driveScope = value;
-                  });
+                  if (value != null) {
+                    setState(() {
+                      driveScope = value;
+                    });
+                  }
                 },
               ),
             const SizedBox(height: 15),
