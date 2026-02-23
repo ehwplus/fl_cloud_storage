@@ -5,14 +5,22 @@ import 'package:fl_cloud_storage/fl_cloud_storage.dart';
 import 'package:fl_cloud_storage/fl_cloud_storage/cloud_storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart' show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
+import 'package:google_sign_in/google_sign_in.dart'
+    show GoogleSignIn, GoogleSignInAccount, GoogleSignInAuthentication;
 import 'package:googleapis/drive/v3.dart' as v3;
 import 'package:http/http.dart' as http;
 
-const googleDriveSingleUserScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope];
+const googleDriveSingleUserScope = [
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope
+];
 
 /// Scope for sharing json with other Google users
-const googleDriveFullScope = [v3.DriveApi.driveAppdataScope, v3.DriveApi.driveFileScope, v3.DriveApi.driveScope];
+const googleDriveFullScope = [
+  v3.DriveApi.driveAppdataScope,
+  v3.DriveApi.driveFileScope,
+  v3.DriveApi.driveScope
+];
 
 const _googleDriveFileListFields =
     'nextPageToken,files(id,name,mimeType,description,parents,trashed,explicitlyTrashed,modifiedTime)';
@@ -29,7 +37,8 @@ class _GoogleAuthClient extends http.BaseClient {
   }
 }
 
-class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
+class GoogleDriveService
+    implements ICloudService<GoogleDriveFile, GoogleDriveFolder> {
   /// This class cannot be instantiated synchronously.
   /// Use `await GoogleDriveService.initialize()`.
   GoogleDriveService._(this.driveScope);
@@ -98,7 +107,9 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   @override
   Future<bool> authenticate() async {
     final googleSignIn = GoogleSignIn(
-      scopes: driveScope == GoogleDriveScope.appData ? googleDriveSingleUserScope : googleDriveFullScope,
+      scopes: driveScope == GoogleDriveScope.appData
+          ? googleDriveSingleUserScope
+          : googleDriveFullScope,
     );
 
     // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
@@ -109,13 +120,16 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     final GoogleSignInAccount? account = await _getGoogleUser(googleSignIn);
 
     final isAuthorizedForMobile = !kIsWeb && account != null;
-    final isAuthorizedForWeb = kIsWeb && account != null && await googleSignIn.canAccessScopes(googleSignIn.scopes);
+    final isAuthorizedForWeb = kIsWeb &&
+        account != null &&
+        await googleSignIn.canAccessScopes(googleSignIn.scopes);
     if (!isAuthorizedForMobile && !isAuthorizedForWeb) {
       return false;
     }
 
     final GoogleSignInAuthentication googleAuth = await account.authentication;
-    _authenticationTokens = AuthenticationTokens(accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
+    _authenticationTokens = AuthenticationTokens(
+        accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
     _email = account.email;
     _displayName = account.displayName;
     _photoUrl = account.photoUrl;
@@ -133,7 +147,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       if (kIsWeb && !isSignedIn) {
         return await googleSignIn.signIn();
       }
-      final resultOfSilentSignIn = await googleSignIn.signInSilently(suppressErrors: false, reAuthenticate: true);
+      final resultOfSilentSignIn = await googleSignIn.signInSilently(
+          suppressErrors: false, reAuthenticate: true);
       return resultOfSilentSignIn ?? await googleSignIn.signIn();
     } on PlatformException catch (e1) {
       try {
@@ -179,20 +194,25 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   // FILES
 
   @override
-  Future<bool> doesFileExist({required GoogleDriveFile file, bool ignoreTrashedFiles = true}) async {
+  Future<bool> doesFileExist(
+      {required GoogleDriveFile file, bool ignoreTrashedFiles = true}) async {
     if (_driveApi == null) {
       return false;
     }
 
     try {
-      final v3.File? cloudFile = await _driveApi!.files.get(file.file.id!) as v3.File?;
-      return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
+      final v3.File? cloudFile =
+          await _driveApi!.files.get(file.file.id!) as v3.File?;
+      return cloudFile != null &&
+          (!ignoreTrashedFiles || !(cloudFile.trashed == true));
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = await authenticate();
         if (authenticated) {
-          final v3.File? cloudFile = await _driveApi!.files.get(file.file.id!) as v3.File?;
-          return cloudFile != null && (!ignoreTrashedFiles || !(cloudFile.trashed == true));
+          final v3.File? cloudFile =
+              await _driveApi!.files.get(file.file.id!) as v3.File?;
+          return cloudFile != null &&
+              (!ignoreTrashedFiles || !(cloudFile.trashed == true));
         }
         throw TooManyRequestsError();
       }
@@ -209,7 +229,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     }
 
     if (file.file.id == null) {
-      throw Exception('Must provide a file id of the file which shall be downloaded!');
+      throw Exception(
+          'Must provide a file id of the file which shall be downloaded!');
     }
     // If the used http.Client completes with an error when making a REST call,
     // this method will complete with the same error.
@@ -238,12 +259,14 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     bool retry = false,
   }) async {
     if (_driveApi == null) {
-      throw Exception('DriveApi is null, unable to download file ${file.fileName}.');
+      throw Exception(
+          'DriveApi is null, unable to download file ${file.fileName}.');
     }
 
     // Completes with a commons.ApiRequestError if the API endpoint returned an error
     if (file.file.id == null) {
-      throw Exception('Must provide a file id of the file which shall be downloaded!');
+      throw Exception(
+          'Must provide a file id of the file which shall be downloaded!');
     }
 
     bool isTextFile(String contentType) {
@@ -313,7 +336,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
               completer.complete(); // Signal that download is complete
             },
             onError: (dynamic error) {
-              debugPrint('[sync] Unable to store downloaded photo ${file.fileName}: $error');
+              debugPrint(
+                  '[sync] Unable to store downloaded photo ${file.fileName}: $error');
               completer.completeError(error);
             },
           );
@@ -330,7 +354,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = !retry && await authenticate();
         if (authenticated) {
-          return downloadFile(file: file, onBytesDownloaded: onBytesDownloaded, retry: true);
+          return downloadFile(
+              file: file, onBytesDownloaded: onBytesDownloaded, retry: true);
         }
         throw TooManyRequestsError();
       }
@@ -359,7 +384,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
         final v3.File driveFile = v3.File()
           ..description = file.description
           ..name = file.fileName;
-        final updatedFile = await _driveApi!.files.update(driveFile, file.fileId!, uploadMedia: file.media);
+        final updatedFile = await _driveApi!.files
+            .update(driveFile, file.fileId!, uploadMedia: file.media);
         return file.copyWith(
           fileId: updatedFile.id,
           fileName: updatedFile.name,
@@ -367,7 +393,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
           modifiedTime: updatedFile.modifiedTime,
         );
       }
-      final cratedFile = await _driveApi!.files.create(file.file, uploadMedia: file.media);
+      final cratedFile =
+          await _driveApi!.files.create(file.file, uploadMedia: file.media);
       return file.copyWith(
         fileId: cratedFile.id,
         fileName: cratedFile.name,
@@ -378,7 +405,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = !retry && await authenticate();
         if (authenticated) {
-          return uploadFile(file: file, parent: parent, overwrite: overwrite, retry: true);
+          return uploadFile(
+              file: file, parent: parent, overwrite: overwrite, retry: true);
         }
         throw TooManyRequestsError();
       }
@@ -406,7 +434,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
         final List<String> queryClauses = [
           if (folder != null) "'${folder.folder.id}' in parents",
         ];
-        final query = _buildQuery(queryClauses, ignoreTrashedFiles: ignoreTrashedFiles);
+        final query =
+            _buildQuery(queryClauses, ignoreTrashedFiles: ignoreTrashedFiles);
         res = await _driveApi!.files.list(
           $fields: _googleDriveFileListFields,
           q: query,
@@ -425,7 +454,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
             description: file.description,
             modifiedTime: file.modifiedTime,
             mimeType: file.mimeType,
-            trashed: (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
+            trashed:
+                (file.trashed ?? false) || (file.explicitlyTrashed ?? false),
             bytes: null,
           );
           result.add(driveFile);
@@ -436,7 +466,10 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = !retry && await authenticate();
         if (authenticated) {
-          return getAllFiles(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
+          return getAllFiles(
+              folder: folder,
+              ignoreTrashedFiles: ignoreTrashedFiles,
+              retry: true);
         }
         throw TooManyRequestsError();
       }
@@ -446,7 +479,9 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
   }
 
   bool _shouldMapToTooManyRequestsError(String? errorMessage) {
-    return errorMessage?.contains('Request had invalid authentication credentials.') == true;
+    return errorMessage
+            ?.contains('Request had invalid authentication credentials.') ==
+        true;
   }
 
   // FOLDERS
@@ -540,7 +575,8 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
         "mimeType = 'application/vnd.google-apps.folder'",
         if (folder != null) "'${folder.folder.id}' in parents",
       ];
-      final query = _buildQuery(queryClauses, ignoreTrashedFiles: ignoreTrashedFiles);
+      final query =
+          _buildQuery(queryClauses, ignoreTrashedFiles: ignoreTrashedFiles);
       res = await _driveApi!.files.list(q: query);
       if (res.nextPageToken != null) {
         // TODO complete the files list
@@ -548,12 +584,17 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       if (res.files == null) {
         throw Exception('Unable to list all files!');
       }
-      return res.files!.map((folder) => GoogleDriveFolder(folder: folder)).toList();
+      return res.files!
+          .map((folder) => GoogleDriveFolder(folder: folder))
+          .toList();
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = !retry && await authenticate();
         if (authenticated) {
-          return getAllFolders(folder: folder, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
+          return getAllFolders(
+              folder: folder,
+              ignoreTrashedFiles: ignoreTrashedFiles,
+              retry: true);
         }
         throw TooManyRequestsError();
       }
@@ -579,12 +620,16 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
       final v3.FileList res = await _driveApi!.files.list(
         q: query,
       );
-      return res.files?.map((element) => GoogleDriveFolder(folder: element)).toList(growable: false) ?? [];
+      return res.files
+              ?.map((element) => GoogleDriveFolder(folder: element))
+              .toList(growable: false) ??
+          [];
     } on v3.DetailedApiRequestError catch (e) {
       if (_shouldMapToTooManyRequestsError(e.message)) {
         final bool authenticated = !retry && await authenticate();
         if (authenticated) {
-          return getFoldersByName(name, ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
+          return getFoldersByName(name,
+              ignoreTrashedFiles: ignoreTrashedFiles, retry: true);
         }
         throw TooManyRequestsError();
       }
@@ -592,10 +637,11 @@ class GoogleDriveService implements ICloudService<GoogleDriveFile, GoogleDriveFo
     }
   }
 
-  String? _buildQuery(List<String> baseClauses, {required bool ignoreTrashedFiles}) {
+  String? _buildQuery(List<String> baseClauses,
+      {required bool ignoreTrashedFiles}) {
     final queryClauses = <String>[
       ...baseClauses,
-      if (ignoreTrashedFiles) 'and trashed=false',
+      if (ignoreTrashedFiles) 'trashed=false',
     ];
     if (queryClauses.isEmpty) {
       return null;

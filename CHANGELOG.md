@@ -1,4 +1,4 @@
-## 0.3.8
+## 0.3.9
 
 * Fix: A fresh login was no longer possible with version 0.3.5.
 * Feature: Be able to ask for last motified time
